@@ -18,6 +18,9 @@ from api.routes import users as users_router
 from api.routes import hardware_products as hardware_products_router
 from api.routes import companies as companies_router
 from api.routes import datacenters as datacenters_router
+from api.routes import notes as notes_router
+from api.routes import published as published_router
+from api.routes import audit as audit_router
 from api.settings import settings
 
 setup_logging()
@@ -91,3 +94,6 @@ app.include_router(users_router.router, prefix="/api/v1")
 app.include_router(hardware_products_router.router, prefix="/api/v1")
 app.include_router(companies_router.router, prefix="/api/v1")
 app.include_router(datacenters_router.router, prefix="/api/v1")
+app.include_router(notes_router.router, prefix="/api/v1")
+app.include_router(published_router.router, prefix="/api/v1")
+app.include_router(audit_router.router, prefix="/api/v1")

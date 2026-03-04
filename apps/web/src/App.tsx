@@ -11,11 +11,16 @@ import CompanyList from './routes/companies/CompanyList'
 import CompanyDetail from './routes/companies/CompanyDetail'
 import DatacenterList from './routes/datacenters/DatacenterList'
 import DatacenterDetail from './routes/datacenters/DatacenterDetail'
+import NoteList from './routes/notes/NoteList'
+import NoteEditor from './routes/notes/NoteEditor'
+import PublishedNote from './routes/published/PublishedNote'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      {/* Public published note page — no auth required */}
+      <Route path="/published/:slug" element={<PublishedNote />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -25,6 +30,9 @@ export default function App() {
           <Route path="/companies/:id" element={<CompanyDetail />} />
           <Route path="/datacenters" element={<DatacenterList />} />
           <Route path="/datacenters/:id" element={<DatacenterDetail />} />
+          <Route path="/notes" element={<NoteList />} />
+          <Route path="/notes/new" element={<NoteEditor />} />
+          <Route path="/notes/:id" element={<NoteEditor />} />
         </Route>
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

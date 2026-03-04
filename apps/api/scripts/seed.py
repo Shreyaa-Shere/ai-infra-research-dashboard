@@ -3,6 +3,7 @@
 import asyncio
 import datetime
 import logging
+import re
 import uuid
 
 from sqlalchemy import select
@@ -13,8 +14,18 @@ from api.models import User, RefreshToken  # noqa: F401 — ensure models are re
 from api.models.company import Company, CompanyType
 from api.models.datacenter_site import DatacenterSite, DatacenterStatus
 from api.models.hardware_product import HardwareCategory, HardwareProduct
+from api.models.research_note import EntityType, NoteEntityLink, NoteStatus, ResearchNote
 from api.models.user import Role
 from api.settings import settings
+
+
+def _slugify(title: str, uid: uuid.UUID) -> str:
+    slug = title.lower()
+    slug = re.sub(r"[^\w\s-]", "", slug)
+    slug = re.sub(r"[\s_-]+", "-", slug)
+    slug = slug.strip("-")
+    short = str(uid).replace("-", "")[:8]
+    return f"{slug}-{short}"
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +157,144 @@ async def seed() -> None:
             else:
                 session.add(DatacenterSite(id=uuid.uuid4(), **dc))  # type: ignore[arg-type]
                 logger.info("Created datacenter site: %s", dc["name"])
+
+        await session.commit()
+
+        # ── Analyst user (for seed notes author) ──────────────────────────────
+        analyst_email = "analyst@example.com"
+        result = await session.execute(select(User).where(User.email == analyst_email))
+        analyst = result.scalar_one_or_none()
+        if not analyst:
+            analyst = User(
+                id=uuid.uuid4(),
+                email=analyst_email,
+                hashed_password=hash_password("Analystpass1!"),
+                role=Role.analyst,
+                is_active=True,
+            )
+            session.add(analyst)
+            await session.commit()
+            await session.refresh(analyst)
+            logger.info("Created analyst user: %s", analyst_email)
+
+        # Fetch entity IDs for linking
+        hw_h100 = (
+            await session.execute(
+                select(HardwareProduct).where(HardwareProduct.name == "H100")
+            )
+        ).scalar_one_or_none()
+
+        co_nvidia = (
+            await session.execute(select(Company).where(Company.name == "NVIDIA"))
+        ).scalar_one_or_none()
+
+        dc_us = (
+            await session.execute(
+                select(DatacenterSite).where(
+                    DatacenterSite.name == "US West GPU Cluster"
+                )
+            )
+        ).scalar_one_or_none()
+
+        # ── Research Notes ────────────────────────────────────────────────────
+        note_data = [
+            {
+                "title": "H100 Supply Chain Analysis",
+                "body_markdown": (
+                    "# H100 Supply Chain Analysis\n\n"
+                    "## Overview\n\n"
+                    "The NVIDIA H100 GPU represents a critical node in the AI infrastructure supply chain. "
+                    "Manufactured on TSMC's 4nm process, lead times have extended to **26–52 weeks** in 2024.\n\n"
+                    "## Key Constraints\n\n"
+                    "- CoWoS packaging capacity at TSMC\n"
+                    "- HBM3 supply from SK Hynix\n"
+                    "- NVLink switch availability\n\n"
+                    "## Outlook\n\n"
+                    "Supply is expected to normalize by Q3 2025 as TSMC expands CoWoS capacity."
+                ),
+                "status": NoteStatus.published,
+                "tags": ["gpu", "supply-chain", "nvidia"],
+                "links": [
+                    (EntityType.hardware_product, hw_h100),
+                    (EntityType.company, co_nvidia),
+                ],
+            },
+            {
+                "title": "US West GPU Cluster Capacity Review",
+                "body_markdown": (
+                    "# US West GPU Cluster Capacity Review\n\n"
+                    "## Current State\n\n"
+                    "The US West GPU Cluster operates at **87% utilization** as of Q1 2026. "
+                    "Primary workloads include LLM training and inference.\n\n"
+                    "## Recommendations\n\n"
+                    "1. Expand cooling capacity before adding more racks\n"
+                    "2. Negotiate Power Purchase Agreement for 200MW additional capacity\n"
+                    "3. Evaluate liquid cooling for next-gen H200 deployment"
+                ),
+                "status": NoteStatus.review,
+                "tags": ["datacenter", "capacity"],
+                "links": [(EntityType.datacenter, dc_us)],
+            },
+            {
+                "title": "NVIDIA Competitive Moat — Draft",
+                "body_markdown": (
+                    "# NVIDIA Competitive Moat\n\n"
+                    "_Draft — in progress_\n\n"
+                    "## CUDA Ecosystem Lock-in\n\n"
+                    "NVIDIA's CUDA platform has been developed since 2006 and now underpins "
+                    "virtually all major ML frameworks. Switching costs are extremely high.\n\n"
+                    "## TODO\n\n"
+                    "- [ ] Add AMD MI300X comparison\n"
+                    "- [ ] Quantify developer switching costs\n"
+                    "- [ ] Interview hyperscaler buyers"
+                ),
+                "status": NoteStatus.draft,
+                "tags": ["gpu", "competitive-analysis"],
+                "links": [(EntityType.company, co_nvidia)],
+            },
+        ]
+
+        for nd in note_data:
+            result = await session.execute(
+                select(ResearchNote).where(ResearchNote.title == nd["title"])
+            )
+            if result.scalar_one_or_none():
+                logger.info("ResearchNote '%s' already exists, skipping.", nd["title"])
+                continue
+
+            note_id = uuid.uuid4()
+            slug = (
+                _slugify(nd["title"], note_id)
+                if nd["status"] == NoteStatus.published
+                else None
+            )
+            note = ResearchNote(
+                id=note_id,
+                title=nd["title"],
+                body_markdown=nd["body_markdown"],
+                status=nd["status"],
+                slug=slug,
+                tags=nd["tags"],
+                author_id=analyst.id,
+                published_at=datetime.datetime.now(tz=datetime.timezone.utc)
+                if nd["status"] == NoteStatus.published
+                else None,
+            )
+            session.add(note)
+            await session.flush()
+
+            for entity_type, entity in nd["links"]:
+                if entity is not None:
+                    session.add(
+                        NoteEntityLink(
+                            id=uuid.uuid4(),
+                            note_id=note.id,
+                            entity_type=entity_type,
+                            entity_id=entity.id,
+                        )
+                    )
+
+            logger.info("Created research note: '%s' [%s]", nd["title"], nd["status"].value)
 
         await session.commit()
         logger.info("Seed complete.")

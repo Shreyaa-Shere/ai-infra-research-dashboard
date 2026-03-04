@@ -67,7 +67,13 @@ import type {
   HardwareProduct,
   HardwareProductCreate,
   HardwareProductUpdate,
+  LinkedEntityDisplay,
+  LinkedEntityInput,
+  NoteStatus,
   PaginatedResponse,
+  ResearchNote,
+  ResearchNoteCreate,
+  ResearchNoteUpdate,
 } from './entities'
 
 // ── Auth calls ────────────────────────────────────────────────────────────────
@@ -204,4 +210,62 @@ export const datacentersApi = {
 
   delete: (token: string, id: string) =>
     request<void>(`/api/v1/datacenters/${id}`, { method: 'DELETE', token }),
+}
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+
+export const notesApi = {
+  list: (
+    token: string,
+    params: {
+      limit?: number
+      offset?: number
+      status?: NoteStatus
+      tag?: string
+      q?: string
+    } = {}
+  ) =>
+    request<PaginatedResponse<ResearchNote>>(
+      `/api/v1/notes${qs(params)}`,
+      { token }
+    ),
+
+  get: (token: string, id: string) =>
+    request<ResearchNote>(`/api/v1/notes/${id}`, { token }),
+
+  create: (token: string, data: ResearchNoteCreate) =>
+    request<ResearchNote>('/api/v1/notes', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  update: (token: string, id: string, data: ResearchNoteUpdate) =>
+    request<ResearchNote>(`/api/v1/notes/${id}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  delete: (token: string, id: string) =>
+    request<void>(`/api/v1/notes/${id}`, { method: 'DELETE', token }),
+
+  publish: (token: string, id: string) =>
+    request<ResearchNote>(`/api/v1/notes/${id}/publish`, {
+      method: 'POST',
+      token,
+    }),
+
+  getLinks: (token: string, id: string) =>
+    request<LinkedEntityDisplay[]>(`/api/v1/notes/${id}/links`, { token }),
+
+  replaceLinks: (token: string, id: string, links: LinkedEntityInput[]) =>
+    request<LinkedEntityDisplay[]>(`/api/v1/notes/${id}/links`, {
+      method: 'PUT',
+      token,
+      body: JSON.stringify(links),
+    }),
+
+  getPublished: (slug: string) =>
+    request<ResearchNote>(`/api/v1/published/${slug}`),
 }

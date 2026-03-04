@@ -99,3 +99,53 @@ export interface PaginatedResponse<T> {
   limit: number
   offset: number
 }
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+
+export type NoteStatus = 'draft' | 'review' | 'published'
+export type EntityType = 'hardware_product' | 'company' | 'datacenter'
+
+export interface AuthorInfo {
+  id: string
+  email: string
+}
+
+export interface LinkedEntityDisplay {
+  entity_type: EntityType
+  entity_id: string
+  display: { name: string; kind: string }
+}
+
+export interface LinkedEntityInput {
+  entity_type: EntityType
+  entity_id: string
+}
+
+export interface ResearchNote {
+  id: string
+  title: string
+  body_markdown: string
+  status: NoteStatus
+  slug: string | null
+  tags: string[]
+  author: AuthorInfo
+  linked_entities: LinkedEntityDisplay[]
+  created_at: string
+  updated_at: string
+  published_at: string | null
+}
+
+export interface ResearchNoteCreate {
+  title: string
+  body_markdown: string
+  tags?: string[]
+  linked_entities?: LinkedEntityInput[]
+}
+
+export interface ResearchNoteUpdate {
+  title?: string
+  body_markdown?: string
+  tags?: string[]
+  status?: 'draft' | 'review'
+  linked_entities?: LinkedEntityInput[]
+}

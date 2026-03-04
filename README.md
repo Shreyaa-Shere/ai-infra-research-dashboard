@@ -115,6 +115,66 @@ List endpoints support `?limit=20&offset=0` pagination and are Redis-cached (60s
 - **Hardware Products**: H100, A100, MI300X
 - **Datacenter Sites**: US West GPU Cluster, EU AI Datacenter
 
+## Research Notes Workflow (Slice 3)
+
+Slice 3 adds a full research notes system with markdown editing, entity linking, and a publish workflow.
+
+### Pages
+
+| URL | Description |
+|---|---|
+| `/notes` | List notes (filtered by status / tag / search query) |
+| `/notes/new` | Create a new draft note |
+| `/notes/:id` | Edit note — Write/Preview tabs, tag chips, entity linker |
+| `/published/:slug` | Public read-only rendered page (no auth required) |
+
+### REST API
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/v1/notes` | viewer+ | List notes (RBAC-filtered) |
+| POST | `/api/v1/notes` | analyst / admin | Create note |
+| GET | `/api/v1/notes/{id}` | viewer+ | Get note detail |
+| PATCH | `/api/v1/notes/{id}` | author / admin | Update title, body, tags, status |
+| DELETE | `/api/v1/notes/{id}` | author / admin | Delete note |
+| POST | `/api/v1/notes/{id}/publish` | analyst / admin | Publish note → generates slug |
+| GET | `/api/v1/notes/{id}/links` | viewer+ | Get entity links |
+| PUT | `/api/v1/notes/{id}/links` | author / admin | Atomically replace entity links |
+| GET | `/api/v1/published/{slug}` | public | Fetch published note by slug |
+| GET | `/api/v1/audit` | admin only | Audit log (recent activity) |
+
+### Testing the Publish Flow
+
+```bash
+# 1. Login as analyst
+TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"analyst@example.com","password":"Analystpass1!"}' | jq -r .access_token)
+
+# 2. Create a draft note
+NOTE_ID=$(curl -s -X POST http://localhost:8000/api/v1/notes \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"My GPU Analysis","body_markdown":"# H100\n\nGreat chip.","tags":["gpu"]}' | jq -r .id)
+
+# 3. Publish it
+SLUG=$(curl -s -X POST "http://localhost:8000/api/v1/notes/$NOTE_ID/publish" \
+  -H "Authorization: Bearer $TOKEN" | jq -r .slug)
+
+# 4. Read without auth
+curl -s "http://localhost:8000/api/v1/published/$SLUG" | jq .title
+# or open: http://localhost:5173/published/$SLUG
+```
+
+### Seed Data
+
+`make seed` also creates:
+- **3 research notes** (1 published, 1 review, 1 draft)
+- Notes linked to H100, NVIDIA, and US West GPU Cluster
+- Tags: `gpu`, `supply-chain`, `datacenter`
+
+The published note is immediately accessible at `/published/<slug>`.
+
 ## Where to Put Future Modules
 
 | Concern | Location |

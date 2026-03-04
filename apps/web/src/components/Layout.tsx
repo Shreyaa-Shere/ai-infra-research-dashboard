@@ -5,6 +5,7 @@ const navLinks = [
   { to: '/hardware-products', label: 'Hardware Products' },
   { to: '/companies', label: 'Companies' },
   { to: '/datacenters', label: 'Datacenters' },
+  { to: '/notes', label: 'Research Notes' },
 ]
 
 export default function Layout() {

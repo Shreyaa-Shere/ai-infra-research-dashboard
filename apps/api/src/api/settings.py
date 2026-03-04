@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     jwt_access_ttl_min: int = 15
     jwt_refresh_ttl_days: int = 7
 
+    # ── Bcrypt ────────────────────────────────────────────────────────────────
+    # Lower this to 4 in .env for faster local dev; keep 12+ in production.
+    bcrypt_rounds: int = 12
+
     # ── Seed / Admin ──────────────────────────────────────────────────────────
     admin_email: str = "admin@example.com"
     admin_password: str = "changeme123!"

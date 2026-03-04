@@ -21,9 +21,21 @@ FastAPI (apps/api)          ← stateless, async
          └── Redis           ← list-endpoint cache (60s TTL)
 ```
 
-## Domain Entity Relationships (Slice 2)
+## Domain Entity Relationships (Slice 2 + 3)
 
 ```
+User
+  │ id, email, hashed_password, role, is_active
+  │
+  └──< ResearchNote            (author_id FK → User, CASCADE)
+         │ id, title, body_markdown, status, slug, tags[], published_at
+         │
+         └──< NoteEntityLink   (note_id FK → ResearchNote, CASCADE)
+                id, entity_type, entity_id  ← polymorphic ref (app-level FK)
+
+AuditLog                       (actor_user_id FK → User, SET NULL)
+  id, action, entity_type, entity_id, meta_json
+
 Company
   │ id, name (unique), type, region, website
   │
@@ -41,6 +53,8 @@ HardwareProduct                (standalone, no FK)
 | `hardware_category` | GPU, CPU, Networking, Accelerator |
 | `company_type` | fab, idm, cloud, vendor, research |
 | `datacenter_status` | planned, active, retired |
+| `note_status` | draft, review, published |
+| `entity_type` | hardware_product, company, datacenter |
 
 ### Backend Layer Responsibilities
 
@@ -89,6 +103,6 @@ HardwareProduct                (standalone, no FK)
 
 1. **Slice 1 — Auth**: JWT-based login, protected routes, user model ✓
 2. **Slice 2 — Core domain entities**: HardwareProduct, Company, DatacenterSite, CRUD APIs, list/detail UI ✓
-3. **Slice 3 — Research Notes + Markdown Editor + Entity Linking**
-4. **Slice 4 — Search & filter**: Full-text search via PostgreSQL
-5. **Slice 5 — Visualisations**: Chart components backed by aggregation endpoints
+3. **Slice 3 — Research Notes + Markdown Editor + Entity Linking + Publish Workflow** ✓
+4. **Slice 4 — MetricsSeries + MetricPoints + Dashboard Aggregates + Charts**
+5. **Slice 5 — Full-text Search + Advanced Filters**
