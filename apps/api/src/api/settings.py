@@ -4,10 +4,25 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    # ── App ───────────────────────────────────────────────────────────────────
     app_version: str = "0.1.0"
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/airesearch"
-    redis_url: str = "redis://localhost:6379"
     log_level: str = "INFO"
+
+    # ── Database ──────────────────────────────────────────────────────────────
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/airesearch"
+
+    # ── Redis ─────────────────────────────────────────────────────────────────
+    redis_url: str = "redis://localhost:6379"
+
+    # ── JWT ───────────────────────────────────────────────────────────────────
+    jwt_secret: str = "change-me-in-production-use-a-long-random-string"
+    jwt_algorithm: str = "HS256"
+    jwt_access_ttl_min: int = 15
+    jwt_refresh_ttl_days: int = 7
+
+    # ── Seed / Admin ──────────────────────────────────────────────────────────
+    admin_email: str = "admin@example.com"
+    admin_password: str = "changeme123!"
 
 
 settings = Settings()
