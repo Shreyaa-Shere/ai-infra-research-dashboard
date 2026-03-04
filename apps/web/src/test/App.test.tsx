@@ -4,13 +4,16 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect } from 'vitest'
 
 import { queryClient } from '../lib/queryClient'
+import { AuthProvider } from '../store/AuthContext'
 import App from '../App'
 
 function wrapper(initialEntries: string[]) {
   return (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={initialEntries}>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </MemoryRouter>
     </QueryClientProvider>
   )

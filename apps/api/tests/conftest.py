@@ -9,9 +9,11 @@ Tables are created via Alembic (`make migrate`) before running tests.
 import os
 import uuid
 
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from api.auth.hashing import hash_password
 from api.main import app
@@ -25,9 +27,64 @@ _DB_URL = os.getenv(
     "postgresql+asyncpg://postgres:postgres@postgres:5432/airesearch",
 )
 
-_engine = create_async_engine(_DB_URL)
+# NullPool: no connection pooling — each session gets a fresh TCP connection
+# that is closed on exit. This prevents cross-event-loop connection reuse,
+# which would cause asyncpg InterfaceError / Task-pending failures.
+_engine = create_async_engine(_DB_URL, poolclass=NullPool)
 _SessionLocal = async_sessionmaker(_engine, expire_on_commit=False)
 
+
+# ── Session-level patch: replace the app's pooled engine with NullPool ────────
+# The app's own engine (api/db/engine.py) uses a connection pool. With
+# function-scoped event loops, pool connections from loop N are invalid in
+# loop N+1 and cause hangs/Task-pending errors. Replacing it with a NullPool
+# engine for the whole test session fixes this without touching production code.
+
+@pytest.fixture(scope="session", autouse=True)
+def patch_app_db_to_nullpool() -> None:
+    import api.db.engine as engine_module
+    import api.db.session as session_module
+
+    test_engine = create_async_engine(_DB_URL, poolclass=NullPool)
+    engine_module.engine = test_engine
+    session_module.async_session_factory = async_sessionmaker(
+        test_engine, expire_on_commit=False
+    )
+    yield
+    # No async cleanup needed — NullPool connections are closed per-session.
+
+
+# ── Per-test setup: reset slowapi in-memory rate-limit counters ───────────────
+# The login endpoint is limited to 10/minute. All test requests originate from
+# 127.0.0.1, so the counter accumulates across tests and starts returning 429.
+# Resetting MemoryStorage before each test keeps the counter at zero.
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter() -> None:
+    from api.auth.rate_limit import limiter
+    limiter._storage.reset()
+    yield
+
+
+# ── Per-test teardown: close the Redis singleton ──────────────────────────────
+# The cache module holds a global _redis client. If a test triggers caching,
+# Redis opens an asyncio connection. When the test's event loop closes before
+# that connection is cleanly shut down, the pending read task causes
+# "RuntimeError: Task pending". Closing it after every test prevents this.
+
+@pytest_asyncio.fixture(autouse=True)
+async def close_redis_after_test() -> None:
+    yield
+    import api.services.cache as cache_module
+    if cache_module._redis is not None:
+        try:
+            await cache_module._redis.aclose()
+        except Exception:
+            pass
+        cache_module._redis = None
+
+
+# ── Core fixtures ─────────────────────────────────────────────────────────────
 
 @pytest_asyncio.fixture
 async def db() -> AsyncSession:

@@ -1,10 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { AuthProvider } from '../store/AuthContext'
+import * as AuthModule from '../store/AuthContext'
 import HardwareProductList from '../routes/hardware-products/HardwareProductList'
 
 const MOCK_RESPONSE = {
@@ -59,19 +58,28 @@ function makeWrapper(mockJson: unknown) {
     defaultOptions: { queries: { retry: false } },
   })
 
-  // Stub AuthContext to provide a token without going through login
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={qc}>
-        <MemoryRouter>
-          <AuthProvider>{children}</AuthProvider>
-        </MemoryRouter>
+        <MemoryRouter>{children}</MemoryRouter>
       </QueryClientProvider>
     )
   }
 }
 
 describe('HardwareProductList', () => {
+  beforeEach(() => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      user: null,
+      accessToken: 'fake-test-token',
+      isLoading: false,
+      error: null,
+      login: vi.fn(),
+      logout: vi.fn(),
+      refresh: vi.fn(),
+    })
+  })
+
   it('renders table with column headers and rows', async () => {
     const Wrapper = makeWrapper(MOCK_RESPONSE)
     render(<HardwareProductList />, { wrapper: Wrapper })

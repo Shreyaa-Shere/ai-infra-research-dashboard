@@ -34,7 +34,7 @@ async def _cleanup_by_vendor(db: AsyncSession, vendor: str) -> None:
 @pytest.mark.asyncio
 async def test_list_requires_auth(api_client: AsyncClient) -> None:
     resp = await api_client.get(_BASE)
-    assert resp.status_code == 403
+    assert resp.status_code == 401  # FastAPI >=0.110 HTTPBearer returns 401 for missing token
 
 
 @pytest.mark.asyncio
