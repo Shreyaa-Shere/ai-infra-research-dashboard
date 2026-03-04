@@ -57,6 +57,19 @@ export interface RefreshResponse {
   token_type: string
 }
 
+import type {
+  Company,
+  CompanyCreate,
+  CompanyUpdate,
+  DatacenterCreate,
+  DatacenterSite,
+  DatacenterUpdate,
+  HardwareProduct,
+  HardwareProductCreate,
+  HardwareProductUpdate,
+  PaginatedResponse,
+} from './entities'
+
 // ── Auth calls ────────────────────────────────────────────────────────────────
 
 export const authApi = {
@@ -81,4 +94,114 @@ export const authApi = {
 
   me: (accessToken: string) =>
     request<User>('/api/v1/me', { token: accessToken }),
+}
+
+// ── Entity helpers ────────────────────────────────────────────────────────────
+
+function qs(params: Record<string, string | number | undefined | null>): string {
+  const p = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    if (v != null) p.set(k, String(v))
+  }
+  const s = p.toString()
+  return s ? `?${s}` : ''
+}
+
+// ── Hardware Products ─────────────────────────────────────────────────────────
+
+export const hardwareProductsApi = {
+  list: (
+    token: string,
+    params: { limit?: number; offset?: number; vendor?: string; category?: string } = {}
+  ) =>
+    request<PaginatedResponse<HardwareProduct>>(
+      `/api/v1/hardware-products${qs(params)}`,
+      { token }
+    ),
+
+  get: (token: string, id: string) =>
+    request<HardwareProduct>(`/api/v1/hardware-products/${id}`, { token }),
+
+  create: (token: string, data: HardwareProductCreate) =>
+    request<HardwareProduct>('/api/v1/hardware-products', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  update: (token: string, id: string, data: HardwareProductUpdate) =>
+    request<HardwareProduct>(`/api/v1/hardware-products/${id}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  delete: (token: string, id: string) =>
+    request<void>(`/api/v1/hardware-products/${id}`, { method: 'DELETE', token }),
+}
+
+// ── Companies ─────────────────────────────────────────────────────────────────
+
+export const companiesApi = {
+  list: (
+    token: string,
+    params: { limit?: number; offset?: number; type?: string } = {}
+  ) =>
+    request<PaginatedResponse<Company>>(
+      `/api/v1/companies${qs(params)}`,
+      { token }
+    ),
+
+  get: (token: string, id: string) =>
+    request<Company>(`/api/v1/companies/${id}`, { token }),
+
+  create: (token: string, data: CompanyCreate) =>
+    request<Company>('/api/v1/companies', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  update: (token: string, id: string, data: CompanyUpdate) =>
+    request<Company>(`/api/v1/companies/${id}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  delete: (token: string, id: string) =>
+    request<void>(`/api/v1/companies/${id}`, { method: 'DELETE', token }),
+}
+
+// ── Datacenters ───────────────────────────────────────────────────────────────
+
+export const datacentersApi = {
+  list: (
+    token: string,
+    params: { limit?: number; offset?: number; owner_company_id?: string; status?: string } = {}
+  ) =>
+    request<PaginatedResponse<DatacenterSite>>(
+      `/api/v1/datacenters${qs(params)}`,
+      { token }
+    ),
+
+  get: (token: string, id: string) =>
+    request<DatacenterSite>(`/api/v1/datacenters/${id}`, { token }),
+
+  create: (token: string, data: DatacenterCreate) =>
+    request<DatacenterSite>('/api/v1/datacenters', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  update: (token: string, id: string, data: DatacenterUpdate) =>
+    request<DatacenterSite>(`/api/v1/datacenters/${id}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  delete: (token: string, id: string) =>
+    request<void>(`/api/v1/datacenters/${id}`, { method: 'DELETE', token }),
 }

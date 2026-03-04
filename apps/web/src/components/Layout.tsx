@@ -1,5 +1,12 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
 
+const navLinks = [
+  { to: '/dashboard', label: 'Overview' },
+  { to: '/hardware-products', label: 'Hardware Products' },
+  { to: '/companies', label: 'Companies' },
+  { to: '/datacenters', label: 'Datacenters' },
+]
+
 export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -22,18 +29,21 @@ export default function Layout() {
       <div className="flex flex-1">
         <aside className="w-56 border-r border-gray-200 bg-gray-50 p-4 shrink-0">
           <nav className="flex flex-col gap-1 text-sm">
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded-md ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }
-            >
-              Overview
-            </NavLink>
+            {navLinks.map(({ to, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `px-3 py-2 rounded-md ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700 font-medium'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`
+                }
+              >
+                {label}
+              </NavLink>
+            ))}
           </nav>
         </aside>
 

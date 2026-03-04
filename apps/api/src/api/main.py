@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from slowapi import _rate_limit_exceeded_handler
@@ -14,6 +15,9 @@ from api.middleware import RequestIdMiddleware
 from api.routes import health, version
 from api.routes import auth as auth_router
 from api.routes import users as users_router
+from api.routes import hardware_products as hardware_products_router
+from api.routes import companies as companies_router
+from api.routes import datacenters as datacenters_router
 from api.settings import settings
 
 setup_logging()
@@ -31,6 +35,15 @@ app = FastAPI(
     title="AI Infrastructure Research Dashboard API",
     version=settings.app_version,
     lifespan=lifespan,
+)
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ── Rate limiter ───────────────────────────────────────────────────────────────
@@ -75,3 +88,6 @@ app.include_router(health.router)
 app.include_router(version.router, prefix="/api/v1")
 app.include_router(auth_router.router, prefix="/api/v1")
 app.include_router(users_router.router, prefix="/api/v1")
+app.include_router(hardware_products_router.router, prefix="/api/v1")
+app.include_router(companies_router.router, prefix="/api/v1")
+app.include_router(datacenters_router.router, prefix="/api/v1")

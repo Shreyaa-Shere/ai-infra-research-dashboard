@@ -71,6 +71,50 @@ Copy `.env.example` → `.env` and set at minimum:
 
 See `.env.example` for the full list.
 
+## Entity Management (Slice 2)
+
+Slice 2 adds three core domain entities browsable via the sidebar.
+
+### Pages
+
+| URL | Description |
+|---|---|
+| `/hardware-products` | List all GPUs / CPUs / accelerators |
+| `/hardware-products/:id` | Detail view with specs |
+| `/companies` | List semiconductor vendors, fabs, cloud providers |
+| `/companies/:id` | Detail view |
+| `/datacenters` | List datacenter sites with capacity |
+| `/datacenters/:id` | Detail view with owner company link |
+
+### REST API
+
+| Method | Path | Auth |
+|---|---|---|
+| GET | `/api/v1/hardware-products` | viewer+ |
+| POST | `/api/v1/hardware-products` | analyst / admin |
+| GET | `/api/v1/hardware-products/{id}` | viewer+ |
+| PATCH | `/api/v1/hardware-products/{id}` | analyst / admin |
+| DELETE | `/api/v1/hardware-products/{id}` | admin only |
+| GET | `/api/v1/companies` | viewer+ |
+| POST | `/api/v1/companies` | analyst / admin |
+| GET | `/api/v1/companies/{id}` | viewer+ |
+| PATCH | `/api/v1/companies/{id}` | analyst / admin |
+| DELETE | `/api/v1/companies/{id}` | admin only |
+| GET | `/api/v1/datacenters` | viewer+ |
+| POST | `/api/v1/datacenters` | analyst / admin |
+| GET | `/api/v1/datacenters/{id}` | viewer+ |
+| PATCH | `/api/v1/datacenters/{id}` | analyst / admin |
+| DELETE | `/api/v1/datacenters/{id}` | admin only |
+
+List endpoints support `?limit=20&offset=0` pagination and are Redis-cached (60s TTL).
+
+### Seed Data
+
+`make seed` now also creates:
+- **Companies**: NVIDIA, AMD, TSMC, Amazon, Google
+- **Hardware Products**: H100, A100, MI300X
+- **Datacenter Sites**: US West GPU Cluster, EU AI Datacenter
+
 ## Where to Put Future Modules
 
 | Concern | Location |

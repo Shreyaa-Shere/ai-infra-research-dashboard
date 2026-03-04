@@ -11,14 +11,46 @@ Browser (apps/web)
     │  HTTP / REST
     ▼
 FastAPI (apps/api)          ← stateless, async
-    ├── Routes (src/api/routes/)
-    ├── Services / use-cases  ← to be added in feature slices
-    ├── SQLAlchemy models     ← to be added per domain
+    ├── Routes    (src/api/routes/)
+    ├── Services  (src/api/services/)   ← orchestration + cache invalidation
+    ├── Repos     (src/api/repositories/) ← DB queries only
+    ├── Models    (src/api/models/)     ← SQLAlchemy 2.0 declarative
     └── DB / Redis adapters
          │
          ├── PostgreSQL      ← primary data store
-         └── Redis           ← caching / pub-sub (future)
+         └── Redis           ← list-endpoint cache (60s TTL)
 ```
+
+## Domain Entity Relationships (Slice 2)
+
+```
+Company
+  │ id, name (unique), type, region, website
+  │
+  └──< DatacenterSite          (owner_company_id FK → Company, SET NULL)
+         id, name, region, power_mw, status
+
+HardwareProduct                (standalone, no FK)
+  id, name, vendor, category, release_date, memory_gb, tdp_watts, process_node
+```
+
+### Enums
+
+| Enum | Values |
+|---|---|
+| `hardware_category` | GPU, CPU, Networking, Accelerator |
+| `company_type` | fab, idm, cloud, vendor, research |
+| `datacenter_status` | planned, active, retired |
+
+### Backend Layer Responsibilities
+
+| Layer | Responsibility |
+|---|---|
+| `routes/` | HTTP binding, request/response serialisation, RBAC dependency injection |
+| `services/` | Business logic, conflict validation, cache read/write/invalidation |
+| `repositories/` | DB queries, pagination, filtering — no business logic |
+| `models/` | SQLAlchemy table definitions + relationships |
+| `schemas/` | Pydantic v2 DTOs (Create / Update / Response) |
 
 ## Repo Structure
 
@@ -55,7 +87,8 @@ FastAPI (apps/api)          ← stateless, async
 
 ## Future Slices
 
-1. **Slice 1 — Auth**: JWT-based login, protected routes, user model
-2. **Slice 2 — Research entities**: Papers, datasets, infrastructure records
-3. **Slice 3 — Search & filter**: Full-text search via PostgreSQL / Typesense
-4. **Slice 4 — Visualisations**: Chart components backed by aggregation endpoints
+1. **Slice 1 — Auth**: JWT-based login, protected routes, user model ✓
+2. **Slice 2 — Core domain entities**: HardwareProduct, Company, DatacenterSite, CRUD APIs, list/detail UI ✓
+3. **Slice 3 — Research Notes + Markdown Editor + Entity Linking**
+4. **Slice 4 — Search & filter**: Full-text search via PostgreSQL
+5. **Slice 5 — Visualisations**: Chart components backed by aggregation endpoints

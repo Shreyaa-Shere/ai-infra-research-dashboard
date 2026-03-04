@@ -17,6 +17,8 @@ from api.auth.hashing import hash_password
 from api.main import app
 from api.models import RefreshToken  # noqa: F401
 from api.models.user import Role, User
+from api.models.company import Company, CompanyType
+from api.models.hardware_product import HardwareCategory, HardwareProduct
 
 _DB_URL = os.getenv(
     "DATABASE_URL",
@@ -64,3 +66,72 @@ async def test_user(db: AsyncSession) -> User:
     await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
     await db.execute(delete(User).where(User.id == user.id))
     await db.commit()
+
+
+@pytest_asyncio.fixture
+async def admin_user(db: AsyncSession) -> User:
+    """Create an admin user; delete after test."""
+    email = f"admin_{uuid.uuid4().hex[:8]}@example.com"
+    user = User(
+        id=uuid.uuid4(),
+        email=email,
+        hashed_password=hash_password("Adminpass1!"),
+        role=Role.admin,
+        is_active=True,
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    yield user
+    from sqlalchemy import delete
+    await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
+    await db.execute(delete(User).where(User.id == user.id))
+    await db.commit()
+
+
+@pytest_asyncio.fixture
+async def analyst_user(db: AsyncSession) -> User:
+    """Create an analyst user; delete after test."""
+    email = f"analyst_{uuid.uuid4().hex[:8]}@example.com"
+    user = User(
+        id=uuid.uuid4(),
+        email=email,
+        hashed_password=hash_password("Analystpass1!"),
+        role=Role.analyst,
+        is_active=True,
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    yield user
+    from sqlalchemy import delete
+    await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
+    await db.execute(delete(User).where(User.id == user.id))
+    await db.commit()
+
+
+@pytest_asyncio.fixture
+async def admin_token(api_client: AsyncClient, admin_user: User) -> str:
+    resp = await api_client.post(
+        "/api/v1/auth/login",
+        json={"email": admin_user.email, "password": "Adminpass1!"},
+    )
+    return resp.json()["access_token"]
+
+
+@pytest_asyncio.fixture
+async def analyst_token(api_client: AsyncClient, analyst_user: User) -> str:
+    resp = await api_client.post(
+        "/api/v1/auth/login",
+        json={"email": analyst_user.email, "password": "Analystpass1!"},
+    )
+    return resp.json()["access_token"]
+
+
+@pytest_asyncio.fixture
+async def viewer_token(api_client: AsyncClient, test_user: User) -> str:
+    resp = await api_client.post(
+        "/api/v1/auth/login",
+        json={"email": test_user.email, "password": "Testpassword1!"},
+    )
+    return resp.json()["access_token"]
