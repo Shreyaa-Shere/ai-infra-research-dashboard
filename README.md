@@ -5,29 +5,23 @@ A monorepo for researching and visualising AI infrastructure data.
 ## Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Compose v2)
-- [Make](https://www.gnu.org/software/make/) (`choco install make` on Windows / `brew install make` on macOS)
+- [Make](https://www.gnu.org/software/make/)
 
-## Setup
+## Quick Start
 
 ```bash
-# 1. Clone and enter the repo
-git clone <repo-url>
-cd ai-infra-research-dashboard
-
-# 2. Copy env file and edit as needed
-cp .env.example .env
-
-# 3. Start everything
-make dev
+cp .env.example .env        # edit JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
+make dev                    # builds + starts postgres, redis, api, web
+# in another terminal:
+make migrate                # runs alembic upgrade head
+make seed                   # creates the default admin user
 ```
 
 | URL | Service |
 |---|---|
-| http://localhost:5173 | Frontend (React) |
-| http://localhost:8000/docs | Backend API (Swagger UI) |
+| http://localhost:5173 | Frontend |
+| http://localhost:8000/docs | API Swagger UI |
 | http://localhost:8000/healthz | Health check |
-
-> `make lint`, `make test`, and `make migrate` require the stack to be running (`make dev` in another terminal).
 
 ## Commands
 
@@ -35,29 +29,53 @@ make dev
 |---|---|
 | `make dev` | Build and start all services |
 | `make down` | Stop all services |
-| `make logs` | Tail logs from all services |
-| `make lint` | Run ruff (backend) + ESLint (frontend) |
-| `make format` | Run ruff formatter + Prettier |
-| `make test` | Run pytest (backend) + Vitest (frontend) |
+| `make logs` | Tail logs |
+| `make lint` | ruff (backend) + ESLint (frontend) |
+| `make format` | ruff formatter + Prettier |
+| `make test` | pytest (backend) + Vitest (frontend) |
 | `make migrate` | Apply pending Alembic migrations |
-| `make makemigrations MSG="description"` | Create a new Alembic revision |
-| `make seed` | Run the database seed script |
+| `make makemigrations MSG="..."` | Create new Alembic revision |
+| `make seed` | Create default admin user (idempotent) |
 
-## Running Migrations
+> `make lint`, `make test`, `make migrate`, `make seed` require `make dev` to be running first.
+
+## Creating the Admin User
 
 ```bash
-# Apply all pending migrations
-make migrate
-
-# After adding a SQLAlchemy model, autogenerate a new migration
-make makemigrations MSG="add user table"
+make migrate   # ensure tables exist
+make seed      # creates ADMIN_EMAIL / ADMIN_PASSWORD from .env
 ```
+
+To change the admin credentials, update `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` and re-run `make seed`.
+
+## Logging In (local)
+
+```bash
+# via curl
+curl -s -X POST http://localhost:8000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@example.com","password":"changeme123!"}' | jq .
+
+# or open http://localhost:5173/login in the browser
+```
+
+## Environment Variables
+
+Copy `.env.example` → `.env` and set at minimum:
+
+| Variable | Description |
+|---|---|
+| `JWT_SECRET` | Long random string — `openssl rand -hex 32` |
+| `ADMIN_EMAIL` | Initial admin account email |
+| `ADMIN_PASSWORD` | Initial admin account password |
+
+See `.env.example` for the full list.
 
 ## Where to Put Future Modules
 
 | Concern | Location |
 |---|---|
-| New API domain (e.g. papers) | `apps/api/src/api/routes/papers.py` + model in `src/api/models/` |
+| New API domain (e.g. papers) | `apps/api/src/api/routes/papers.py` + model in `models/` |
 | New frontend page | `apps/web/src/routes/` + register in `App.tsx` |
 | Shared types | `packages/shared/` |
 | Infrastructure changes | `infra/docker-compose.yml` |
@@ -65,4 +83,5 @@ make makemigrations MSG="add user table"
 
 ## Architecture
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for layering, conventions, and future slices.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system overview
+- [docs/AUTH.md](docs/AUTH.md) — token strategy & RBAC
