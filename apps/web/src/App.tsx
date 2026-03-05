@@ -20,6 +20,8 @@ import SourceDetail from './routes/sources/SourceDetail'
 import SearchPage from './routes/search/SearchPage'
 import AcceptInvitePage from './routes/accept-invite/AcceptInvitePage'
 import UsersPage from './routes/admin/UsersPage'
+import MetricSeriesList from './routes/metric-series/MetricSeriesList'
+import MetricSeriesDetail from './routes/metric-series/MetricSeriesDetail'
 
 export default function App() {
   return (
@@ -43,6 +45,8 @@ export default function App() {
           <Route path="/sources" element={<SourceList />} />
           <Route path="/sources/:id" element={<SourceDetail />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/metric-series" element={<MetricSeriesList />} />
+          <Route path="/metric-series/:id" element={<MetricSeriesDetail />} />
           {/* Admin-only routes */}
           <Route element={<AdminRoute />}>
             <Route path="/admin/users" element={<UsersPage />} />

@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { to: '/datacenters', label: 'Datacenters' },
   { to: '/notes', label: 'Research Notes' },
   { to: '/sources', label: 'Sources' },
+  { to: '/metric-series', label: 'Metric Series' },
 ]
 
 const ADMIN_LINKS = [

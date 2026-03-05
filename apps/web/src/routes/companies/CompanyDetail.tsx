@@ -1,23 +1,55 @@
-import { Link, useParams } from 'react-router-dom'
-import LoadingSkeleton from '../../components/LoadingSkeleton'
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import ErrorState from '../../components/ErrorState'
-import { useCompany } from '../../hooks/useCompanies'
+import LoadingSkeleton from '../../components/LoadingSkeleton'
+import { useCompany, useDeleteCompany } from '../../hooks/useCompanies'
+import { useAuth } from '../../store/AuthContext'
+import CompanyForm from './CompanyForm'
 
 export default function CompanyDetail() {
   const { id } = useParams<{ id: string }>()
-  const { data, isLoading, isError } = useCompany(id!)
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { data, isLoading, isError, refetch } = useCompany(id!)
+  const deleteMutation = useDeleteCompany()
+  const [showEdit, setShowEdit] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
+
+  const canWrite = user?.role === 'admin' || user?.role === 'analyst'
+  const canDelete = user?.role === 'admin'
 
   if (isLoading) return <LoadingSkeleton rows={4} cols={2} />
-  if (isError || !data) return <ErrorState message="Company not found." />
+  if (isError || !data) return <ErrorState message="Company not found." onRetry={() => void refetch()} />
 
   return (
     <div className="max-w-2xl">
-      <Link
-        to="/companies"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
-      >
-        ← Back to Companies
-      </Link>
+      <div className="mb-4 flex items-center justify-between">
+        <Link
+          to="/companies"
+          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+        >
+          ← Back to Companies
+        </Link>
+        {canWrite && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowEdit(true)}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Edit
+            </button>
+            {canDelete && (
+              <button
+                onClick={() => setShowDelete(true)}
+                className="rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="mt-4 flex items-center gap-3">
         <h1 className="text-2xl font-bold text-gray-900">{data.name}</h1>
@@ -54,6 +86,24 @@ export default function CompanyDetail() {
       <p className="mt-6 text-xs text-gray-400">
         Added {new Date(data.created_at).toLocaleDateString()}
       </p>
+
+      {showEdit && (
+        <CompanyForm initial={data} onClose={() => setShowEdit(false)} />
+      )}
+
+      {showDelete && (
+        <ConfirmDialog
+          title="Delete Company"
+          message={`Delete "${data.name}"? This cannot be undone.`}
+          isPending={deleteMutation.isPending}
+          onConfirm={() =>
+            deleteMutation.mutate(data.id, {
+              onSuccess: () => navigate('/companies'),
+            })
+          }
+          onCancel={() => setShowDelete(false)}
+        />
+      )}
     </div>
   )
 }
