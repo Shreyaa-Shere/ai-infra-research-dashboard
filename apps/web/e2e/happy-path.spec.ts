@@ -65,15 +65,16 @@ test.describe('Dashboard', () => {
   })
 
   test('sidebar navigation links are present', async ({ page }) => {
-    await expect(page.locator('text=Hardware Products')).toBeVisible()
-    await expect(page.locator('text=Companies')).toBeVisible()
-    await expect(page.locator('text=Research Notes')).toBeVisible()
-    await expect(page.locator('text=Sources')).toBeVisible()
+    const sidebar = page.getByRole('navigation', { name: 'Sidebar navigation' })
+    await expect(sidebar.getByText('Hardware Products')).toBeVisible()
+    await expect(sidebar.getByText('Companies')).toBeVisible()
+    await expect(sidebar.getByText('Research Notes')).toBeVisible()
+    await expect(sidebar.getByText('Sources')).toBeVisible()
     await expect(page.locator('a[href="/search"]')).toBeVisible()
   })
 
   test('admin sees User Management in sidebar', async ({ page }) => {
-    await expect(page.locator('text=User Management')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'User Management' })).toBeVisible({ timeout: 10000 })
   })
 })
 
@@ -106,19 +107,20 @@ test.describe('Admin User Management', () => {
   })
 
   test('admin can navigate to /admin/users', async ({ page }) => {
-    await page.click('text=User Management')
+    await page.getByRole('link', { name: 'User Management' }).click()
     await expect(page).toHaveURL(/\/admin\/users/)
     await expect(page.locator('[data-testid="admin-users-page"]')).toBeVisible()
   })
 
   test('users table shows at least the admin user', async ({ page }) => {
-    await page.click('text=User Management')
+    await page.getByRole('link', { name: 'User Management' }).click()
     await expect(page.locator('[data-testid="users-table"]')).toBeVisible({ timeout: 8000 })
     await expect(page.locator(`text=${ADMIN_EMAIL}`)).toBeVisible()
   })
 
   test('invite modal opens and shows email field', async ({ page }) => {
-    await page.click('text=User Management')
+    await expect(page.getByRole('link', { name: 'User Management' })).toBeVisible({ timeout: 10000 })
+    await page.getByRole('link', { name: 'User Management' }).click()
     await page.click('[data-testid="invite-user-button"]')
     await expect(page.locator('[data-testid="invite-modal"]')).toBeVisible()
     await expect(page.locator('[data-testid="invite-email-input"]')).toBeVisible()
@@ -139,7 +141,7 @@ test.describe('Analyst RBAC', () => {
 
   test('analyst does not see User Management in sidebar', async ({ page }) => {
     await login(page, ANALYST_EMAIL, ANALYST_PASSWORD)
-    await expect(page.locator('text=User Management')).not.toBeVisible()
+    await expect(page.getByRole('link', { name: 'User Management' })).not.toBeVisible()
   })
 })
 
