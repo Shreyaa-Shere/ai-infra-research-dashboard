@@ -7,3 +7,5 @@ from api.models.datacenter_site import DatacenterSite as DatacenterSite
 from api.models.research_note import ResearchNote as ResearchNote
 from api.models.research_note import NoteEntityLink as NoteEntityLink
 from api.models.research_note import AuditLog as AuditLog
+from api.models.metric import MetricSeries as MetricSeries
+from api.models.metric import MetricPoint as MetricPoint

@@ -149,3 +149,76 @@ export interface ResearchNoteUpdate {
   status?: 'draft' | 'review'
   linked_entities?: LinkedEntityInput[]
 }
+
+// ── Metrics ───────────────────────────────────────────────────────────────────
+
+export type MetricEntityType = 'hardware_product' | 'company' | 'datacenter'
+export type MetricFrequency = 'daily' | 'weekly' | 'monthly'
+
+export interface MetricSeries {
+  id: string
+  name: string
+  entity_type: MetricEntityType
+  entity_id: string
+  unit: string
+  frequency: MetricFrequency
+  source: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface MetricSeriesCreate {
+  name: string
+  entity_type: MetricEntityType
+  entity_id: string
+  unit: string
+  frequency?: MetricFrequency
+  source?: string | null
+}
+
+export interface MetricSeriesUpdate {
+  name?: string
+  unit?: string
+  frequency?: MetricFrequency
+  source?: string | null
+}
+
+export interface MetricPointIn {
+  timestamp: string
+  value: number
+}
+
+export interface MetricPointsUpsertRequest {
+  points: MetricPointIn[]
+}
+
+export interface MetricPoint {
+  id: string
+  metric_series_id: string
+  timestamp: string
+  value: number
+}
+
+export interface KPIBlock {
+  label: string
+  value: number | string
+  unit?: string | null
+  change_pct?: number | null
+}
+
+export interface ChartPoint {
+  label: string
+  value: number
+}
+
+export interface ChartSeries {
+  series_id: string
+  name: string
+  unit: string
+  data: ChartPoint[]
+}
+
+export interface MetricsOverview {
+  kpis: KPIBlock[]
+  charts: ChartSeries[]
+}

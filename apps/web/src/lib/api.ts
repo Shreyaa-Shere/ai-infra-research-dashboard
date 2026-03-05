@@ -69,6 +69,13 @@ import type {
   HardwareProductUpdate,
   LinkedEntityDisplay,
   LinkedEntityInput,
+  MetricEntityType,
+  MetricPoint,
+  MetricPointsUpsertRequest,
+  MetricSeries,
+  MetricSeriesCreate,
+  MetricSeriesUpdate,
+  MetricsOverview,
   NoteStatus,
   PaginatedResponse,
   ResearchNote,
@@ -268,4 +275,59 @@ export const notesApi = {
 
   getPublished: (slug: string) =>
     request<ResearchNote>(`/api/v1/published/${slug}`),
+}
+
+// ── Metrics ───────────────────────────────────────────────────────────────────
+
+export const metricsApi = {
+  overview: (token: string) =>
+    request<MetricsOverview>('/api/v1/metrics/overview', { token }),
+
+  listSeries: (
+    token: string,
+    params: { limit?: number; offset?: number; entity_type?: MetricEntityType; entity_id?: string } = {}
+  ) =>
+    request<PaginatedResponse<MetricSeries>>(
+      `/api/v1/metric-series${qs(params)}`,
+      { token }
+    ),
+
+  getSeries: (token: string, id: string) =>
+    request<MetricSeries>(`/api/v1/metric-series/${id}`, { token }),
+
+  createSeries: (token: string, data: MetricSeriesCreate) =>
+    request<MetricSeries>('/api/v1/metric-series', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  updateSeries: (token: string, id: string, data: MetricSeriesUpdate) =>
+    request<MetricSeries>(`/api/v1/metric-series/${id}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  deleteSeries: (token: string, id: string) =>
+    request<void>(`/api/v1/metric-series/${id}`, { method: 'DELETE', token }),
+
+  upsertPoints: (token: string, id: string, data: MetricPointsUpsertRequest) =>
+    request<{ upserted: number }>(`/api/v1/metric-series/${id}/points`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  listPoints: (
+    token: string,
+    id: string,
+    params: { from_ts?: string; to_ts?: string; limit?: number } = {}
+  ) =>
+    request<MetricPoint[]>(
+      `/api/v1/metric-series/${id}/points${qs(params)}`,
+      { token }
+    ),
+
+  exportCsvUrl: (id: string) => `${BASE}/api/v1/metric-series/${id}/export.csv`,
 }

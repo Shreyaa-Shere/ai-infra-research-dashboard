@@ -21,7 +21,7 @@ FastAPI (apps/api)          ← stateless, async
          └── Redis           ← list-endpoint cache (60s TTL)
 ```
 
-## Domain Entity Relationships (Slice 2 + 3)
+## Domain Entity Relationships (Slice 2 + 3 + 4)
 
 ```
 User
@@ -44,6 +44,12 @@ Company
 
 HardwareProduct                (standalone, no FK)
   id, name, vendor, category, release_date, memory_gb, tdp_watts, process_node
+
+MetricSeries                   (entity_id is app-level, no hard FK)
+  │ id, name, entity_type, entity_id, unit, frequency, source
+  │
+  └──< MetricPoint             (metric_series_id FK → MetricSeries, CASCADE)
+         id, timestamp, value
 ```
 
 ### Enums
@@ -55,6 +61,7 @@ HardwareProduct                (standalone, no FK)
 | `datacenter_status` | planned, active, retired |
 | `note_status` | draft, review, published |
 | `entity_type` | hardware_product, company, datacenter |
+| `metric_frequency` | daily, weekly, monthly |
 
 ### Backend Layer Responsibilities
 
@@ -104,5 +111,5 @@ HardwareProduct                (standalone, no FK)
 1. **Slice 1 — Auth**: JWT-based login, protected routes, user model ✓
 2. **Slice 2 — Core domain entities**: HardwareProduct, Company, DatacenterSite, CRUD APIs, list/detail UI ✓
 3. **Slice 3 — Research Notes + Markdown Editor + Entity Linking + Publish Workflow** ✓
-4. **Slice 4 — MetricsSeries + MetricPoints + Dashboard Aggregates + Charts**
+4. **Slice 4 — MetricsSeries + MetricPoints + Dashboard Aggregates + Charts** ✓
 5. **Slice 5 — Full-text Search + Advanced Filters**

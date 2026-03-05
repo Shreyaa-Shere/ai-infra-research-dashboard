@@ -7,6 +7,7 @@ import re
 import uuid
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from api.auth.hashing import hash_password
 from api.db.session import async_session_factory
@@ -14,6 +15,7 @@ from api.models import User, RefreshToken  # noqa: F401 — ensure models are re
 from api.models.company import Company, CompanyType
 from api.models.datacenter_site import DatacenterSite, DatacenterStatus
 from api.models.hardware_product import HardwareCategory, HardwareProduct
+from api.models.metric import MetricEntityType, MetricFrequency, MetricPoint, MetricSeries
 from api.models.research_note import EntityType, NoteEntityLink, NoteStatus, ResearchNote
 from api.models.user import Role
 from api.settings import settings
@@ -295,6 +297,132 @@ async def seed() -> None:
                     )
 
             logger.info("Created research note: '%s' [%s]", nd["title"], nd["status"].value)
+
+        await session.commit()
+
+        # ── Metric Series + Points ────────────────────────────────────────────
+        # Generate 18 monthly timestamps: 2024-01 → 2025-06
+        def _monthly_ts(year: int, month: int) -> datetime.datetime:
+            return datetime.datetime(year, month, 1, tzinfo=datetime.timezone.utc)
+
+        months = []
+        for i in range(18):
+            y, m = divmod(2024 * 12 + i, 12)
+            months.append(_monthly_ts(y, m + 1))
+
+        metric_series_data = []
+
+        if hw_h100:
+            metric_series_data.append({
+                "name": "H100 Shipment Volume",
+                "entity_type": MetricEntityType.hardware_product,
+                "entity_id": hw_h100.id,
+                "unit": "units (thousands)",
+                "frequency": MetricFrequency.monthly,
+                "source": "Industry estimates",
+                "values": [
+                    12, 15, 18, 22, 28, 35, 42, 50, 58, 65,
+                    70, 74, 78, 80, 82, 83, 84, 85,
+                ],
+            })
+
+        if co_nvidia:
+            metric_series_data.append({
+                "name": "NVIDIA Revenue",
+                "entity_type": MetricEntityType.company,
+                "entity_id": co_nvidia.id,
+                "unit": "USD billions",
+                "frequency": MetricFrequency.monthly,
+                "source": "Public filings (quarterly, annualized)",
+                "values": [
+                    6.1, 7.2, 9.0, 10.3, 11.8, 13.5, 15.2, 17.8, 19.1, 20.4,
+                    22.1, 23.5, 24.9, 26.0, 27.2, 28.5, 29.0, 29.8,
+                ],
+            })
+
+        if dc_us:
+            metric_series_data.append({
+                "name": "US West DC Power Usage",
+                "entity_type": MetricEntityType.datacenter,
+                "entity_id": dc_us.id,
+                "unit": "MW",
+                "frequency": MetricFrequency.monthly,
+                "source": "Internal telemetry",
+                "values": [
+                    320, 335, 348, 362, 378, 390, 405, 420, 434, 445,
+                    455, 462, 468, 472, 476, 479, 481, 483,
+                ],
+            })
+
+        dc_eu = (
+            await session.execute(
+                select(DatacenterSite).where(
+                    DatacenterSite.name == "EU AI Datacenter"
+                )
+            )
+        ).scalar_one_or_none()
+
+        if dc_eu:
+            metric_series_data.append({
+                "name": "EU AI DC Power Usage",
+                "entity_type": MetricEntityType.datacenter,
+                "entity_id": dc_eu.id,
+                "unit": "MW",
+                "frequency": MetricFrequency.monthly,
+                "source": "Internal telemetry",
+                "values": [
+                    180, 188, 195, 202, 210, 217, 224, 230, 237, 243,
+                    248, 252, 256, 259, 261, 263, 265, 267,
+                ],
+            })
+
+        for ms_data in metric_series_data:
+            existing_series = (
+                await session.execute(
+                    select(MetricSeries).where(
+                        MetricSeries.name == ms_data["name"],
+                        MetricSeries.entity_id == ms_data["entity_id"],
+                    )
+                )
+            ).scalar_one_or_none()
+
+            if existing_series:
+                logger.info("MetricSeries '%s' already exists, skipping.", ms_data["name"])
+                continue
+
+            series = MetricSeries(
+                id=uuid.uuid4(),
+                name=ms_data["name"],
+                entity_type=ms_data["entity_type"],
+                entity_id=ms_data["entity_id"],
+                unit=ms_data["unit"],
+                frequency=ms_data["frequency"],
+                source=ms_data["source"],
+            )
+            session.add(series)
+            await session.flush()
+
+            # Bulk upsert 18 monthly points
+            rows = [
+                {
+                    "id": uuid.uuid4(),
+                    "metric_series_id": series.id,
+                    "timestamp": ts,
+                    "value": float(val),
+                }
+                for ts, val in zip(months, ms_data["values"])
+            ]
+            stmt = pg_insert(MetricPoint).values(rows)
+            stmt = stmt.on_conflict_do_update(
+                constraint="uq_metric_point",
+                set_={"value": stmt.excluded.value},
+            )
+            await session.execute(stmt)
+            logger.info(
+                "Created MetricSeries '%s' with %d points.",
+                ms_data["name"],
+                len(rows),
+            )
 
         await session.commit()
         logger.info("Seed complete.")

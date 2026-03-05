@@ -175,6 +175,41 @@ curl -s "http://localhost:8000/api/v1/published/$SLUG" | jq .title
 
 The published note is immediately accessible at `/published/<slug>`.
 
+## Metrics + Dashboard (Slice 4)
+
+Slice 4 adds a `MetricSeries` + `MetricPoint` time-series model for tracking numeric KPIs against any entity, and replaces the placeholder Dashboard with live KPI cards and Recharts trend charts.
+
+### Pages
+
+| URL | Description |
+|---|---|
+| `/dashboard` | KPI cards + metric trend charts |
+
+### REST API
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/v1/metrics/overview` | any | KPI counts + chart data |
+| `GET` | `/api/v1/metric-series` | any | List series (paginated) |
+| `POST` | `/api/v1/metric-series` | analyst+ | Create series |
+| `GET` | `/api/v1/metric-series/{id}` | any | Get series |
+| `PATCH` | `/api/v1/metric-series/{id}` | analyst+ | Update series metadata |
+| `DELETE` | `/api/v1/metric-series/{id}` | admin | Delete series |
+| `POST` | `/api/v1/metric-series/{id}/points` | analyst+ | Bulk upsert points (idempotent) |
+| `GET` | `/api/v1/metric-series/{id}/points` | any | List points (with date range filter) |
+| `GET` | `/api/v1/metric-series/{id}/export.csv` | any | Download points as CSV |
+
+### Seed Data
+
+`make seed` now also creates 4 metric series with 18 monthly data points each:
+
+- **H100 Shipment Volume** (hardware_product → H100, unit: units/thousands)
+- **NVIDIA Revenue** (company → NVIDIA, unit: USD billions)
+- **US West DC Power Usage** (datacenter → US West GPU Cluster, unit: MW)
+- **EU AI DC Power Usage** (datacenter → EU AI Datacenter, unit: MW)
+
+See [docs/METRICS.md](docs/METRICS.md) for full documentation.
+
 ## Where to Put Future Modules
 
 | Concern | Location |

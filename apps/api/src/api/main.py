@@ -21,6 +21,8 @@ from api.routes import datacenters as datacenters_router
 from api.routes import notes as notes_router
 from api.routes import published as published_router
 from api.routes import audit as audit_router
+from api.routes.metrics import router as metrics_router
+from api.routes.metrics import overview_router as metrics_overview_router
 from api.settings import settings
 
 setup_logging()
@@ -97,3 +99,5 @@ app.include_router(datacenters_router.router, prefix="/api/v1")
 app.include_router(notes_router.router, prefix="/api/v1")
 app.include_router(published_router.router, prefix="/api/v1")
 app.include_router(audit_router.router, prefix="/api/v1")
+app.include_router(metrics_router, prefix="/api/v1")
+app.include_router(metrics_overview_router, prefix="/api/v1")
