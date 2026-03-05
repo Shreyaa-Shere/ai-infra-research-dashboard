@@ -31,7 +31,7 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 export default function MetricSeriesDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, accessToken } = useAuth()
 
   const { data, isLoading, isError, refetch } = useMetricSeriesDetail(id)
   const { data: points, isLoading: pointsLoading } = useMetricPoints(id, { limit: 100 })
@@ -42,6 +42,29 @@ export default function MetricSeriesDetail() {
   const [showDelete, setShowDelete] = useState(false)
   const [showAddPoint, setShowAddPoint] = useState(false)
   const [addMode, setAddMode] = useState<'single' | 'bulk'>('single')
+  const [csvExporting, setCsvExporting] = useState(false)
+
+  async function handleExportCsv() {
+    if (!accessToken || !data) return
+    setCsvExporting(true)
+    try {
+      const res = await fetch(metricsApi.exportCsvUrl(data.id), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${data.name.replace(/\s+/g, '_')}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      // silently ignore — browser will show no download
+    } finally {
+      setCsvExporting(false)
+    }
+  }
 
   // Single point form
   const [pointDate, setPointDate] = useState('')
@@ -122,13 +145,13 @@ export default function MetricSeriesDetail() {
           ← Back to Metric Series
         </Link>
         <div className="flex items-center gap-2">
-          <a
-            href={metricsApi.exportCsvUrl(data.id)}
-            download
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          <button
+            onClick={() => void handleExportCsv()}
+            disabled={csvExporting}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
-            Export CSV
-          </a>
+            {csvExporting ? 'Exporting…' : 'Export CSV'}
+          </button>
           {canWrite && (
             <>
               <button
