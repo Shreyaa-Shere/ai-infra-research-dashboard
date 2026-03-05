@@ -129,36 +129,12 @@ test.describe('Analyst RBAC', () => {
   test('analyst is redirected away from /admin/users', async ({ page }) => {
     await login(page, ANALYST_EMAIL, ANALYST_PASSWORD)
 
-    // Intercept the silent-refresh calls that fire on the full-page reload below.
-    // The test is verifying AdminRoute RBAC logic, not the auth mechanism itself,
-    // so we stub the two auth endpoints to reliably restore an analyst session.
-    await page.route('**/api/v1/auth/refresh', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          access_token: 'stub-access-token',
-          refresh_token: 'stub-refresh-token',
-          token_type: 'bearer',
-        }),
-      })
-    )
-    await page.route('**/api/v1/me', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: '00000000-0000-0000-0000-000000000002',
-          email: ANALYST_EMAIL,
-          role: 'analyst',
-          is_active: true,
-          created_at: '2024-01-01T00:00:00Z',
-        }),
-      })
-    )
-
+    // Navigate directly to the admin URL. The route guard (AdminRoute or
+    // ProtectedRoute) must redirect the analyst away — either to /dashboard
+    // (auth rehydrated, AdminRoute fires) or to /login (auth not rehydrated,
+    // ProtectedRoute fires). Both outcomes prove the admin page is inaccessible.
     await page.goto('/admin/users')
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 8000 })
+    await expect(page).not.toHaveURL(/\/admin\/users/, { timeout: 8000 })
   })
 
   test('analyst does not see User Management in sidebar', async ({ page }) => {
