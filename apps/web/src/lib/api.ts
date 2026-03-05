@@ -58,6 +58,7 @@ export interface RefreshResponse {
 }
 
 import type {
+  AcceptInviteRequest,
   Company,
   CompanyCreate,
   CompanyUpdate,
@@ -89,6 +90,10 @@ import type {
   SourceDocumentDetail,
   SourceDocumentSummary,
   SourceType,
+  UserAdminOut,
+  UserInviteCreate,
+  UserInviteResponse,
+  UserUpdate,
 } from './entities'
 
 // ── Auth calls ────────────────────────────────────────────────────────────────
@@ -374,6 +379,33 @@ export const ingestionApi = {
 
   getRun: (token: string, id: string) =>
     request<IngestionRunResponse>(`/api/v1/ingestion/runs/${id}`, { token }),
+}
+
+// ── Users / Admin ─────────────────────────────────────────────────────────────
+
+export const usersApi = {
+  list: (token: string, params: { limit?: number; offset?: number } = {}) =>
+    request<PaginatedResponse<UserAdminOut>>(`/api/v1/users${qs(params)}`, { token }),
+
+  invite: (token: string, data: UserInviteCreate) =>
+    request<UserInviteResponse>('/api/v1/users/invite', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  acceptInvite: (data: AcceptInviteRequest) =>
+    request<UserAdminOut>('/api/v1/users/accept-invite', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (token: string, id: string, data: UserUpdate) =>
+    request<UserAdminOut>(`/api/v1/users/${id}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(data),
+    }),
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────

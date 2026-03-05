@@ -1,6 +1,7 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
+import { useAuth } from '../store/AuthContext'
 
-const navLinks = [
+const NAV_LINKS = [
   { to: '/dashboard', label: 'Overview' },
   { to: '/search', label: 'Search' },
   { to: '/hardware-products', label: 'Hardware Products' },
@@ -10,7 +11,14 @@ const navLinks = [
   { to: '/sources', label: 'Sources' },
 ]
 
+const ADMIN_LINKS = [
+  { to: '/admin/users', label: 'User Management' },
+]
+
 export default function Layout() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
@@ -32,7 +40,7 @@ export default function Layout() {
       <div className="flex flex-1">
         <aside className="w-56 border-r border-gray-200 bg-gray-50 p-4 shrink-0">
           <nav className="flex flex-col gap-1 text-sm">
-            {navLinks.map(({ to, label }) => (
+            {NAV_LINKS.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -47,6 +55,29 @@ export default function Layout() {
                 {label}
               </NavLink>
             ))}
+
+            {isAdmin && (
+              <>
+                <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Admin
+                </div>
+                {ADMIN_LINKS.map(({ to, label }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    className={({ isActive }) =>
+                      `px-3 py-2 rounded-md ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700 font-medium'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`
+                    }
+                  >
+                    {label}
+                  </NavLink>
+                ))}
+              </>
+            )}
           </nav>
         </aside>
 

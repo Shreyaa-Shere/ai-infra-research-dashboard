@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 
 from api.auth.rate_limit import limiter
 from api.logging_config import setup_logging
-from api.middleware import RequestIdMiddleware
+from api.middleware import RequestIdMiddleware, SecurityHeadersMiddleware
 from api.routes import health, version
 from api.routes import auth as auth_router
 from api.routes import users as users_router
@@ -46,9 +46,10 @@ app = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
+_cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,6 +60,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── Middleware ────────────────────────────────────────────────────────────────
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestIdMiddleware)
 
 
@@ -75,6 +77,21 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     return JSONResponse(status_code=exc.status_code, content=content)
 
 
+def _safe_errors(errors: list) -> list:
+    """Convert non-serializable Pydantic v2 error contexts (e.g. ValueError) to strings."""
+    result = []
+    for e in errors:
+        e2 = dict(e)
+        if "ctx" in e2 and isinstance(e2["ctx"], dict):
+            e2["ctx"] = {
+                k: str(v) if isinstance(v, Exception) else v
+                for k, v in e2["ctx"].items()
+            }
+        e2.pop("url", None)
+        result.append(e2)
+    return result
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
@@ -85,7 +102,7 @@ async def validation_exception_handler(
             "error": {
                 "code": "VALIDATION_ERROR",
                 "message": "Request validation failed",
-                "details": {"errors": exc.errors()},
+                "details": {"errors": _safe_errors(exc.errors())},
             }
         },
     )

@@ -335,3 +335,40 @@ export interface SearchParams {
   end?: string
   source_type?: SourceType
 }
+
+// ── User Admin ─────────────────────────────────────────────────────────────────
+
+export type Role = 'admin' | 'analyst' | 'viewer'
+
+export interface UserAdminOut {
+  id: string
+  email: string
+  role: Role
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface UserInviteCreate {
+  email: string
+  role: 'analyst' | 'viewer'
+}
+
+export interface UserInviteResponse {
+  id: string
+  email: string
+  role: Role
+  invite_url: string
+  expires_at: string
+  created_at: string
+}
+
+export interface AcceptInviteRequest {
+  token: string
+  password: string
+}
+
+export interface UserUpdate {
+  role?: Role
+  is_active?: boolean
+}

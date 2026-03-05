@@ -8,6 +8,33 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)
 
+_SECURITY_HEADERS: list[tuple[bytes, bytes]] = [
+    (b"x-content-type-options", b"nosniff"),
+    (b"x-frame-options", b"DENY"),
+    (b"referrer-policy", b"strict-origin-when-cross-origin"),
+]
+
+
+class SecurityHeadersMiddleware:
+    """Injects security response headers on every HTTP response."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                raw_headers: list[tuple[bytes, bytes]] = list(message.get("headers", []))
+                raw_headers.extend(_SECURITY_HEADERS)
+                message = {**message, "headers": raw_headers}
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
 
 class RequestIdMiddleware:
     """Pure ASGI middleware — avoids BaseHTTPMiddleware task-pending issues."""

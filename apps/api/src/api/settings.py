@@ -34,5 +34,12 @@ class Settings(BaseSettings):
     ingestion_interval_min: int = 60
     ingest_dir: str = "/app/data/ingest"
 
+    # ── CORS / Security ────────────────────────────────────────────────────────
+    cors_origins: str = "http://localhost:5173"
+    frontend_base_url: str = "http://localhost:5173"
+
+    # ── Invites ────────────────────────────────────────────────────────────────
+    invite_token_ttl_days: int = 7
+
 
 settings = Settings()

@@ -12,3 +12,4 @@ from api.models.metric import MetricPoint as MetricPoint
 from api.models.source_document import SourceDocument as SourceDocument
 from api.models.source_document import SourceEntityLink as SourceEntityLink
 from api.models.source_document import IngestionRun as IngestionRun
+from api.models.user_invite import UserInvite as UserInvite

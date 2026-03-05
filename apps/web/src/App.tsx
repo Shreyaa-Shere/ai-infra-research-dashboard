@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
 import Login from './routes/Login'
 import Dashboard from './routes/Dashboard'
 import NotFound from './routes/NotFound'
@@ -17,13 +18,16 @@ import PublishedNote from './routes/published/PublishedNote'
 import SourceList from './routes/sources/SourceList'
 import SourceDetail from './routes/sources/SourceDetail'
 import SearchPage from './routes/search/SearchPage'
+import AcceptInvitePage from './routes/accept-invite/AcceptInvitePage'
+import UsersPage from './routes/admin/UsersPage'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      {/* Public published note page — no auth required */}
+      {/* Public routes — no auth required */}
       <Route path="/published/:slug" element={<PublishedNote />} />
+      <Route path="/accept-invite" element={<AcceptInvitePage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -39,6 +43,10 @@ export default function App() {
           <Route path="/sources" element={<SourceList />} />
           <Route path="/sources/:id" element={<SourceDetail />} />
           <Route path="/search" element={<SearchPage />} />
+          {/* Admin-only routes */}
+          <Route element={<AdminRoute />}>
+            <Route path="/admin/users" element={<UsersPage />} />
+          </Route>
         </Route>
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
