@@ -117,10 +117,20 @@ class IngestionService:
         engine = create_async_engine(settings.database_url, poolclass=NullPool)
         session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
+        # Reset Redis singleton so it binds to this event loop, not a previous one
+        import api.services.cache as _cache_mod
+        _cache_mod._redis = None
+
         try:
             async with session_factory() as session:
                 await self._run_with_session(session, run_id, dry_run)
         finally:
+            if _cache_mod._redis is not None:
+                try:
+                    await _cache_mod._redis.aclose()
+                except Exception:
+                    pass
+                _cache_mod._redis = None
             await engine.dispose()
 
     async def _run_with_session(
@@ -165,7 +175,10 @@ class IngestionService:
 
             if not dry_run:
                 await session.commit()
-                await cache_delete_pattern(f"{_SOURCES_PREFIX}:*")
+                try:
+                    await cache_delete_pattern(f"{_SOURCES_PREFIX}:*")
+                except Exception as cache_exc:
+                    logger.warning("Cache invalidation failed (non-fatal): %s", cache_exc)
 
         except Exception as exc:
             error_message = str(exc)
@@ -176,6 +189,11 @@ class IngestionService:
 
         await _repo.finish_run(session, run, stats, error_message)
         await session.commit()
+
+        try:
+            await cache_delete_pattern(f"{_RUNS_PREFIX}:*")
+        except Exception as cache_exc:
+            logger.warning("Runs cache invalidation failed (non-fatal): %s", cache_exc)
 
         logger.info(
             "Ingestion run finished",

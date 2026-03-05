@@ -33,6 +33,12 @@ async def _cleanup(db: AsyncSession) -> None:
     await db.execute(delete(IngestionRun))
     await db.execute(delete(SourceDocument))
     await db.commit()
+    from api.services.cache import cache_delete_pattern
+    try:
+        await cache_delete_pattern("sources:*")
+        await cache_delete_pattern("ingestion:runs:*")
+    except Exception:
+        pass
 
 
 def _make_doc(suffix: str = "") -> dict:
@@ -279,7 +285,7 @@ async def test_analyst_can_trigger_run(
     # Patch out the Celery task so tests don't need a real broker
     mock_task = MagicMock()
     mock_task.delay.return_value = MagicMock(id="mock-task-id")
-    with patch("api.services.ingestion.run_ingestion_task", mock_task):
+    with patch("api.workers.tasks.run_ingestion_task", mock_task):
         resp = await api_client.post(
             "/api/v1/ingestion/run",
             json={"source_type": "file", "source_name": "local-ingest", "dry_run": True},
