@@ -145,7 +145,9 @@ class UserService:
         actor: User,
     ) -> UserAdminOut:
         if target_id == actor.id:
-            raise api_error("SELF_MODIFY", "Cannot modify your own account via this endpoint", 400)
+            raise api_error(
+                "SELF_MODIFY", "Cannot modify your own account via this endpoint", 400
+            )
 
         user = await _repo.get_by_id(session, target_id)
         if not user:

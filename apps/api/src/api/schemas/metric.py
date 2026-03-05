@@ -67,7 +67,7 @@ class KPIBlock(BaseModel):
 
 
 class ChartPoint(BaseModel):
-    label: str   # e.g. "2025-01"
+    label: str  # e.g. "2025-01"
     value: float
 
 

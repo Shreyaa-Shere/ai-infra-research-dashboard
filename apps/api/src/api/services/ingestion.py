@@ -56,8 +56,12 @@ class IngestionService:
         url = (item.get("url") or item.get("link") or "").strip().lower()
         published_at = _parse_dt(item.get("published_at"))
         raw_text = (
-            item.get("raw_text") or item.get("text") or item.get("description") or ""
-        )[:_HASH_TEXT_LEN].strip().lower()
+            (item.get("raw_text") or item.get("text") or item.get("description") or "")[
+                :_HASH_TEXT_LEN
+            ]
+            .strip()
+            .lower()
+        )
         parts = [
             title,
             url,
@@ -118,6 +122,7 @@ class IngestionService:
 
         # Reset Redis singleton so it binds to this event loop, not a previous one
         import api.services.cache as _cache_mod
+
         _cache_mod._redis = None
 
         try:
@@ -178,12 +183,16 @@ class IngestionService:
                     await cache_delete_pattern(f"{_SOURCES_PREFIX}:*")
                     await cache_delete_pattern("search:*")
                 except Exception as cache_exc:
-                    logger.warning("Cache invalidation failed (non-fatal): %s", cache_exc)
+                    logger.warning(
+                        "Cache invalidation failed (non-fatal): %s", cache_exc
+                    )
 
         except Exception as exc:
             error_message = str(exc)
             logger.error(
-                "Ingestion run failed: %s", exc, exc_info=True,
+                "Ingestion run failed: %s",
+                exc,
+                exc_info=True,
                 extra={"run_id": run_id},
             )
 
@@ -380,9 +389,7 @@ class IngestionService:
         await cache_set(cache_key, resp.model_dump_json(), 60)
         return resp
 
-    async def get_source(
-        self, session: AsyncSession, doc_id: uuid.UUID
-    ) -> object:
+    async def get_source(self, session: AsyncSession, doc_id: uuid.UUID) -> object:
         from api.schemas.errors import api_error
         from api.schemas.ingestion import SourceDocumentDetail
         from api.services.cache import cache_get, cache_set

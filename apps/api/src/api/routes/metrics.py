@@ -29,6 +29,7 @@ _svc = MetricService()
 
 # ── Overview ──────────────────────────────────────────────────────────────────
 
+
 @overview_router.get("/overview", response_model=MetricsOverviewResponse)
 async def get_metrics_overview(
     session: AsyncSession = Depends(get_session),
@@ -38,6 +39,7 @@ async def get_metrics_overview(
 
 
 # ── Series CRUD ────────────────────────────────────────────────────────────────
+
 
 @router.get("", response_model=PaginatedResponse[MetricSeriesResponse])
 async def list_metric_series(
@@ -90,6 +92,7 @@ async def delete_metric_series(
 
 
 # ── Points ─────────────────────────────────────────────────────────────────────
+
 
 @router.post("/{id}/points", status_code=200)
 async def upsert_metric_points(

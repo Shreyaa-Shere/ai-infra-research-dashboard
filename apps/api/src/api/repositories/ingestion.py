@@ -71,9 +71,7 @@ class IngestionRepository:
         self, session: AsyncSession, limit: int, offset: int
     ) -> tuple[list[IngestionRun], int]:
         total = (
-            await session.execute(
-                select(func.count()).select_from(IngestionRun)
-            )
+            await session.execute(select(func.count()).select_from(IngestionRun))
         ).scalar_one()
         rows = await session.execute(
             select(IngestionRun)
@@ -89,9 +87,7 @@ class IngestionRepository:
         self, session: AsyncSession, content_hash: str
     ) -> SourceDocument | None:
         result = await session.execute(
-            select(SourceDocument).where(
-                SourceDocument.content_hash == content_hash
-            )
+            select(SourceDocument).where(SourceDocument.content_hash == content_hash)
         )
         return result.scalar_one_or_none()
 
@@ -135,8 +131,6 @@ class IngestionRepository:
 
         total = (await session.execute(count_q)).scalar_one()
         rows = await session.execute(
-            query.order_by(SourceDocument.created_at.desc())
-            .limit(limit)
-            .offset(offset)
+            query.order_by(SourceDocument.created_at.desc()).limit(limit).offset(offset)
         )
         return list(rows.scalars().all()), total

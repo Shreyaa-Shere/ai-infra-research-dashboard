@@ -35,7 +35,9 @@ class RunStatus(str, enum.Enum):
 
 # Reuse existing entity_type Postgres enum (created in Slice 3 migration)
 _entity_type_pg = PGEnum(
-    "hardware_product", "company", "datacenter",
+    "hardware_product",
+    "company",
+    "datacenter",
     name="entity_type",
     create_type=False,
 )
@@ -79,7 +81,9 @@ class SourceEntityLink(Base):
     __tablename__ = "source_entity_links"
     __table_args__ = (
         UniqueConstraint(
-            "source_document_id", "entity_type", "entity_id",
+            "source_document_id",
+            "entity_type",
+            "entity_id",
             name="uq_source_entity_link",
         ),
     )

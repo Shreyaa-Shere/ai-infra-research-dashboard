@@ -18,7 +18,9 @@ _CACHE_PREFIX = "hw:list"
 _CACHE_TTL = 60
 
 
-def _list_cache_key(limit: int, offset: int, vendor: str | None, category: str | None) -> str:
+def _list_cache_key(
+    limit: int, offset: int, vendor: str | None, category: str | None
+) -> str:
     return f"{_CACHE_PREFIX}:{limit}:{offset}:{vendor or ''}:{category or ''}"
 
 
@@ -31,10 +33,14 @@ class HardwareProductService:
         vendor: str | None = None,
         category: HardwareCategory | None = None,
     ) -> PaginatedResponse[HardwareProductResponse]:
-        cache_key = _list_cache_key(limit, offset, vendor, category.value if category else None)
+        cache_key = _list_cache_key(
+            limit, offset, vendor, category.value if category else None
+        )
         cached = await cache_get(cache_key)
         if cached:
-            return PaginatedResponse[HardwareProductResponse].model_validate_json(cached)
+            return PaginatedResponse[HardwareProductResponse].model_validate_json(
+                cached
+            )
 
         items, total = await _repo.list(session, limit, offset, vendor, category)
         response = PaginatedResponse[HardwareProductResponse](

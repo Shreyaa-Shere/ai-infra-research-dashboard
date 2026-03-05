@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 @celery_app.task(name="api.workers.tasks.run_ingestion_task", bind=True, max_retries=3)
 def run_ingestion_task(self, run_id: str, dry_run: bool = False) -> None:  # type: ignore[misc]
     """Execute a pre-created IngestionRun by its ID."""
-    logger.info("Task run_ingestion_task started: run_id=%s dry_run=%s", run_id, dry_run)
+    logger.info(
+        "Task run_ingestion_task started: run_id=%s dry_run=%s", run_id, dry_run
+    )
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:

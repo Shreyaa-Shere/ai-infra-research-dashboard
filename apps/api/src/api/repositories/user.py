@@ -15,9 +15,7 @@ class UserRepository:
     # ── users ─────────────────────────────────────────────────────────────────
 
     async def get_by_email(self, session: AsyncSession, email: str) -> User | None:
-        result = await session.execute(
-            select(User).where(User.email == email)
-        )
+        result = await session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
     async def get_by_id(self, session: AsyncSession, user_id: uuid.UUID) -> User | None:
@@ -52,10 +50,17 @@ class UserRepository:
             await session.execute(select(func.count()).select_from(User))
         ).scalar_one()
         rows = (
-            await session.execute(
-                select(User).order_by(User.created_at.asc()).limit(limit).offset(offset)
+            (
+                await session.execute(
+                    select(User)
+                    .order_by(User.created_at.asc())
+                    .limit(limit)
+                    .offset(offset)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return list(rows), count
 
     async def update_user(
@@ -115,8 +120,6 @@ class UserRepository:
         )
         return result.scalar_one_or_none()
 
-    async def mark_invite_used(
-        self, session: AsyncSession, invite: UserInvite
-    ) -> None:
+    async def mark_invite_used(self, session: AsyncSession, invite: UserInvite) -> None:
         invite.used_at = datetime.now(UTC)
         await session.flush()

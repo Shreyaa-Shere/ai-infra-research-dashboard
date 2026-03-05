@@ -25,7 +25,9 @@ class SecurityHeadersMiddleware:
 
         async def send_wrapper(message: Message) -> None:
             if message["type"] == "http.response.start":
-                raw_headers: list[tuple[bytes, bytes]] = list(message.get("headers", []))
+                raw_headers: list[tuple[bytes, bytes]] = list(
+                    message.get("headers", [])
+                )
                 raw_headers.extend(_SECURITY_HEADERS)
                 message = {**message, "headers": raw_headers}
             await send(message)
@@ -45,9 +47,7 @@ class RequestIdMiddleware:
             return
 
         headers = dict(scope.get("headers", []))
-        request_id = (
-            headers.get(b"x-request-id", b"").decode() or str(uuid.uuid4())
-        )
+        request_id = headers.get(b"x-request-id", b"").decode() or str(uuid.uuid4())
 
         # Store on scope state so route handlers can access it
         if "state" not in scope:
@@ -69,7 +69,9 @@ class RequestIdMiddleware:
             if message["type"] == "http.response.start":
                 status_code = message["status"]
                 # Inject X-Request-Id into response headers
-                raw_headers: list[tuple[bytes, bytes]] = list(message.get("headers", []))
+                raw_headers: list[tuple[bytes, bytes]] = list(
+                    message.get("headers", [])
+                )
                 raw_headers.append((b"x-request-id", request_id.encode()))
                 message = {**message, "headers": raw_headers}
             await send(message)

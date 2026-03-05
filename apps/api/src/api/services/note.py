@@ -36,6 +36,7 @@ _PUB_TTL = 300
 
 # ── slug generation ───────────────────────────────────────────────────────────
 
+
 def _make_slug(title: str, uid: uuid.UUID) -> str:
     slug = title.lower()
     slug = re.sub(r"[^\w\s-]", "", slug)
@@ -46,6 +47,7 @@ def _make_slug(title: str, uid: uuid.UUID) -> str:
 
 
 # ── entity display resolution ─────────────────────────────────────────────────
+
 
 async def _resolve_entity_display(
     session: AsyncSession, entity_type: EntityType, entity_id: uuid.UUID
@@ -101,6 +103,7 @@ async def _validate_entity(
 
 # ── response builder ─────────────────────────────────────────────────────────
 
+
 async def _build_response(
     session: AsyncSession, note: ResearchNote
 ) -> ResearchNoteResponse:
@@ -113,7 +116,9 @@ async def _build_response(
             LinkedEntityDisplay(
                 entity_type=link.entity_type,
                 entity_id=link.entity_id,
-                display=display if display else {"name": str(link.entity_id), "kind": "unknown"},
+                display=display
+                if display
+                else {"name": str(link.entity_id), "kind": "unknown"},
             )
         )
 
@@ -133,6 +138,7 @@ async def _build_response(
 
 
 # ── cache helpers ─────────────────────────────────────────────────────────────
+
 
 def _list_key(role: str, limit: int, offset: int, status: str, tag: str, q: str) -> str:
     return f"{_LIST_PREFIX}:{role}:{limit}:{offset}:{status}:{tag}:{q}"
@@ -155,6 +161,7 @@ async def _bust_caches(note_id: uuid.UUID, slug: str | None = None) -> None:
 
 
 # ── service ───────────────────────────────────────────────────────────────────
+
 
 class NoteService:
     # ── list ──────────────────────────────────────────────────────────────────
@@ -474,9 +481,8 @@ class NoteService:
 
 # ── RBAC helpers ──────────────────────────────────────────────────────────────
 
-def _check_visibility(
-    status: NoteStatus, author_id: uuid.UUID, user: User
-) -> None:
+
+def _check_visibility(status: NoteStatus, author_id: uuid.UUID, user: User) -> None:
     if user.role == Role.admin:
         return
     if status == NoteStatus.published:

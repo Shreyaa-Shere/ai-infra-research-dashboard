@@ -5,15 +5,12 @@ These tests run against a real PostgreSQL database (Docker-based, same as the ap
 Alembic migrations must have been applied before running: make migrate && make test.
 """
 
-import uuid
-
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models.research_note import AuditLog, NoteEntityLink, NoteStatus, ResearchNote
-
+from api.models.research_note import AuditLog, NoteEntityLink, ResearchNote
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -36,7 +33,11 @@ async def test_analyst_can_create_note(
 ) -> None:
     resp = await api_client.post(
         "/api/v1/notes",
-        json={"title": "Test Note", "body_markdown": "# Hello\n\nWorld", "tags": ["gpu"]},
+        json={
+            "title": "Test Note",
+            "body_markdown": "# Hello\n\nWorld",
+            "tags": ["gpu"],
+        },
         headers={"Authorization": f"Bearer {analyst_token}"},
     )
     assert resp.status_code == 201, resp.text
@@ -109,12 +110,20 @@ async def test_list_notes_tag_filter(
 ) -> None:
     await api_client.post(
         "/api/v1/notes",
-        json={"title": "GPU Note", "body_markdown": "body", "tags": ["gpu", "datacenter"]},
+        json={
+            "title": "GPU Note",
+            "body_markdown": "body",
+            "tags": ["gpu", "datacenter"],
+        },
         headers={"Authorization": f"Bearer {analyst_token}"},
     )
     await api_client.post(
         "/api/v1/notes",
-        json={"title": "Supply Chain Note", "body_markdown": "body", "tags": ["supply-chain"]},
+        json={
+            "title": "Supply Chain Note",
+            "body_markdown": "body",
+            "tags": ["supply-chain"],
+        },
         headers={"Authorization": f"Bearer {analyst_token}"},
     )
 

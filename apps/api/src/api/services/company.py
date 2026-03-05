@@ -68,7 +68,9 @@ class CompanyService:
         if data.name and data.name != obj.name:
             existing = await _repo.get_by_name(session, data.name)
             if existing:
-                raise api_error("CONFLICT", f"Company '{data.name}' already exists", 409)
+                raise api_error(
+                    "CONFLICT", f"Company '{data.name}' already exists", 409
+                )
         updated = await _repo.update(session, obj, data)
         await cache_delete_pattern(f"{_CACHE_PREFIX}:*")
         return CompanyResponse.model_validate(updated)

@@ -29,7 +29,9 @@ class Company(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(
+        String(255), unique=True, nullable=False, index=True
+    )
     type: Mapped[CompanyType] = mapped_column(
         SAEnum(CompanyType, name="company_type"), nullable=False, index=True
     )

@@ -27,14 +27,18 @@ class MetricFrequency(str, enum.Enum):
 
 # Reuse the existing Postgres enum created in the Slice 3 migration.
 _entity_type_pg = PGEnum(
-    "hardware_product", "company", "datacenter",
+    "hardware_product",
+    "company",
+    "datacenter",
     name="entity_type",
     create_type=False,
 )
 
 # New Postgres enum — created in the Slice 4 migration.
 _metric_frequency_pg = PGEnum(
-    "daily", "weekly", "monthly",
+    "daily",
+    "weekly",
+    "monthly",
     name="metric_frequency",
     create_type=False,
 )
@@ -44,7 +48,11 @@ class MetricSeries(Base):
     __tablename__ = "metric_series"
     __table_args__ = (
         UniqueConstraint(
-            "name", "entity_type", "entity_id", "unit", "frequency",
+            "name",
+            "entity_type",
+            "entity_id",
+            "unit",
+            "frequency",
             name="uq_metric_series",
         ),
     )
@@ -98,6 +106,4 @@ class MetricPoint(Base):
     )
     value: Mapped[float] = mapped_column(Float, nullable=False)
 
-    series: Mapped[MetricSeries] = relationship(
-        "MetricSeries", back_populates="points"
-    )
+    series: Mapped[MetricSeries] = relationship("MetricSeries", back_populates="points")

@@ -21,7 +21,9 @@ class NoteRepository:
     # ── helpers ──────────────────────────────────────────────────────────────
 
     def _with_rels(self):  # type: ignore[return]
-        return selectinload(ResearchNote.author), selectinload(ResearchNote.entity_links)
+        return selectinload(ResearchNote.author), selectinload(
+            ResearchNote.entity_links
+        )
 
     # ── list ─────────────────────────────────────────────────────────────────
 

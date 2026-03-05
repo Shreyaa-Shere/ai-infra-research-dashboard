@@ -21,7 +21,9 @@ _svc = SearchService()
 
 @router.get("", response_model=SearchResponse)
 async def search(
-    q: Annotated[str, Query(min_length=1, max_length=300, description="Full-text search query")],
+    q: Annotated[
+        str, Query(min_length=1, max_length=300, description="Full-text search query")
+    ],
     type: Annotated[
         str,
         Query(pattern="^(all|note|source)$", description="Result type filter"),
@@ -30,11 +32,21 @@ async def search(
     offset: Annotated[int, Query(ge=0)] = 0,
     tags: Annotated[list[str] | None, Query(description="Filter notes by tag")] = None,
     status: Annotated[str | None, Query(description="Filter notes by status")] = None,
-    entity_type: Annotated[str | None, Query(description="Entity type for entity filter")] = None,
-    entity_id: Annotated[uuid.UUID | None, Query(description="Entity ID for entity filter")] = None,
-    start: Annotated[datetime | None, Query(description="Created-after filter (ISO 8601)")] = None,
-    end: Annotated[datetime | None, Query(description="Created-before filter (ISO 8601)")] = None,
-    source_type: Annotated[str | None, Query(description="Filter sources by source_type")] = None,
+    entity_type: Annotated[
+        str | None, Query(description="Entity type for entity filter")
+    ] = None,
+    entity_id: Annotated[
+        uuid.UUID | None, Query(description="Entity ID for entity filter")
+    ] = None,
+    start: Annotated[
+        datetime | None, Query(description="Created-after filter (ISO 8601)")
+    ] = None,
+    end: Annotated[
+        datetime | None, Query(description="Created-before filter (ISO 8601)")
+    ] = None,
+    source_type: Annotated[
+        str | None, Query(description="Filter sources by source_type")
+    ] = None,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> SearchResponse:

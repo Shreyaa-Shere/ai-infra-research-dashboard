@@ -12,9 +12,7 @@ from api.models.research_note import NoteEntityLink, NoteStatus, ResearchNote
 from api.models.source_document import SourceDocument, SourceEntityLink
 
 _HEADLINE_OPTS = (
-    "MaxWords=20,MinWords=5,"
-    "StartSel=<mark>,StopSel=</mark>,"
-    "HighlightAll=FALSE"
+    "MaxWords=20,MinWords=5,StartSel=<mark>,StopSel=</mark>,HighlightAll=FALSE"
 )
 
 
@@ -40,7 +38,9 @@ async def search_notes(
     q_expr = func.websearch_to_tsquery("english", q)
     fts_vec = func.to_tsvector(
         "english",
-        func.coalesce(ResearchNote.title, "") + " " + func.coalesce(ResearchNote.body_markdown, ""),
+        func.coalesce(ResearchNote.title, "")
+        + " "
+        + func.coalesce(ResearchNote.body_markdown, ""),
     )
     rank_expr = func.ts_rank(fts_vec, q_expr).label("rank")
     headline_expr = func.ts_headline(
@@ -132,7 +132,9 @@ async def search_sources(
     q_expr = func.websearch_to_tsquery("english", q)
     fts_vec = func.to_tsvector(
         "english",
-        func.coalesce(SourceDocument.title, "") + " " + func.coalesce(SourceDocument.raw_text, ""),
+        func.coalesce(SourceDocument.title, "")
+        + " "
+        + func.coalesce(SourceDocument.raw_text, ""),
     )
     rank_expr = func.ts_rank(fts_vec, q_expr).label("rank")
     headline_expr = func.ts_headline(

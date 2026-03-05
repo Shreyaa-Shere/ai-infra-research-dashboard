@@ -34,9 +34,18 @@ def _cache_key(
 ) -> str:
     raw = "|".join(
         [
-            q, type_, str(limit), str(offset), role,
-            tags_str, status_filter, entity_type, entity_id,
-            start, end, source_type,
+            q,
+            type_,
+            str(limit),
+            str(offset),
+            role,
+            tags_str,
+            status_filter,
+            entity_type,
+            entity_id,
+            start,
+            end,
+            source_type,
         ]
     )
     return f"{_CACHE_PREFIX}:{hashlib.md5(raw.encode()).hexdigest()}"
@@ -78,7 +87,11 @@ class SearchService:
             )
 
         ck = _cache_key(
-            q, type_, limit, offset, current_user.role.value,
+            q,
+            type_,
+            limit,
+            offset,
+            current_user.role.value,
             ",".join(sorted(tags or [])),
             status_filter or "",
             entity_type or "",
@@ -123,7 +136,8 @@ class SearchService:
                 NoteSearchResult(
                     id=r["id"],
                     title=r["title"],
-                    snippet=r["snippet"] or _truncate(r.get("body_markdown") or "", 200),
+                    snippet=r["snippet"]
+                    or _truncate(r.get("body_markdown") or "", 200),
                     score=float(r["rank"]),
                     status=_enum_val(r["status"]),
                     tags=list(r["tags"] or []),
@@ -169,7 +183,9 @@ class SearchService:
                 note_items + source_items, key=lambda x: x.score, reverse=True
             )
             total = note_total + source_total
-            items: list[NoteSearchResult | SourceSearchResult] = merged[offset: offset + limit]
+            items: list[NoteSearchResult | SourceSearchResult] = merged[
+                offset : offset + limit
+            ]
         elif type_ == "note":
             total = note_total
             items = note_items  # type: ignore[assignment]

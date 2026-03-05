@@ -49,8 +49,7 @@ async def login(
         id=uuid.uuid4(),
         user_id=user.id,
         token_hash=refresh_hash,
-        expires_at=datetime.now(UTC)
-        + timedelta(days=settings.jwt_refresh_ttl_days),
+        expires_at=datetime.now(UTC) + timedelta(days=settings.jwt_refresh_ttl_days),
     )
     session.add(token)
     await session.commit()
@@ -96,8 +95,7 @@ async def refresh(
         id=uuid.uuid4(),
         user_id=user.id,
         token_hash=refresh_hash,
-        expires_at=datetime.now(UTC)
-        + timedelta(days=settings.jwt_refresh_ttl_days),
+        expires_at=datetime.now(UTC) + timedelta(days=settings.jwt_refresh_ttl_days),
     )
     session.add(new_token)
     await session.commit()

@@ -9,7 +9,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # ── Database ──────────────────────────────────────────────────────────────
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/airesearch"
+    database_url: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/airesearch"
+    )
 
     # ── Redis ─────────────────────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379"

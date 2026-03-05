@@ -32,6 +32,4 @@ def hash_token(raw: str) -> str:
 
 def decode_access_token(token: str) -> dict:
     """Raises jwt.ExpiredSignatureError or jwt.InvalidTokenError on failure."""
-    return jwt.decode(
-        token, settings.jwt_secret, algorithms=[settings.jwt_algorithm]
-    )
+    return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])

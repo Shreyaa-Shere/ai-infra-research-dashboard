@@ -47,11 +47,15 @@ async def test_login_unknown_email(api_client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_me_requires_auth(api_client: AsyncClient) -> None:
     resp = await api_client.get("/api/v1/me")
-    assert resp.status_code == 401  # FastAPI >=0.110 HTTPBearer returns 401 for missing token
+    assert (
+        resp.status_code == 401
+    )  # FastAPI >=0.110 HTTPBearer returns 401 for missing token
 
 
 @pytest.mark.asyncio
-async def test_me_returns_current_user(api_client: AsyncClient, test_user: User) -> None:
+async def test_me_returns_current_user(
+    api_client: AsyncClient, test_user: User
+) -> None:
     login = await api_client.post(
         "/api/v1/auth/login",
         json={"email": test_user.email, "password": PASSWORD},

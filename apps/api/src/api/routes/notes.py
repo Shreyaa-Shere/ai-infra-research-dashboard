@@ -32,9 +32,7 @@ async def list_notes(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedResponse[ResearchNoteResponse]:
-    return await _svc.list_notes(
-        session, current_user, limit, offset, status, tag, q
-    )
+    return await _svc.list_notes(session, current_user, limit, offset, status, tag, q)
 
 
 @router.post("", response_model=ResearchNoteResponse, status_code=201)

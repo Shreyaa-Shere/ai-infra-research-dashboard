@@ -30,7 +30,9 @@ class HardwareProductRepository:
         total = total_result.scalar_one()
 
         result = await session.execute(
-            query.order_by(HardwareProduct.created_at.desc()).limit(limit).offset(offset)
+            query.order_by(HardwareProduct.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
         items = list(result.scalars().all())
         return items, total

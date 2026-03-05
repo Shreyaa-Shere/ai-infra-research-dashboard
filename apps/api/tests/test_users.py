@@ -26,7 +26,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.models.user import Role, User
 from api.models.user_invite import UserInvite
 
-
 # ── helpers ────────────────────────────────────────────────────────────────────
 
 
@@ -174,9 +173,7 @@ async def test_accept_invite_already_used(
 
 
 @pytest.mark.asyncio
-async def test_list_users_admin_200(
-    api_client: AsyncClient, admin_token: str
-) -> None:
+async def test_list_users_admin_200(api_client: AsyncClient, admin_token: str) -> None:
     resp = await api_client.get(
         "/api/v1/users",
         headers={"Authorization": f"Bearer {admin_token}"},

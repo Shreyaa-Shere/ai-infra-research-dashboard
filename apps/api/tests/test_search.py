@@ -26,7 +26,6 @@ from api.models.research_note import NoteStatus, ResearchNote
 from api.models.source_document import IngestionStatus, SourceDocument, SourceType
 from api.models.user import User
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -35,6 +34,7 @@ async def _cleanup_search_data(db: AsyncSession) -> None:
     await db.execute(delete(SourceDocument))
     await db.commit()
     from api.services.cache import cache_delete_pattern
+
     try:
         await cache_delete_pattern("search:*")
         await cache_delete_pattern("note:*")
@@ -226,12 +226,18 @@ async def test_viewer_only_sees_published_notes(
     await _cleanup_search_data(db)
     unique = "Xe2vQ9n"
     await _insert_note(
-        db, analyst_user, f"{unique} Published Note",
-        f"Content about {unique} chips.", NoteStatus.published
+        db,
+        analyst_user,
+        f"{unique} Published Note",
+        f"Content about {unique} chips.",
+        NoteStatus.published,
     )
     await _insert_note(
-        db, analyst_user, f"{unique} Draft Note",
-        f"Draft content about {unique} GPUs.", NoteStatus.draft
+        db,
+        analyst_user,
+        f"{unique} Draft Note",
+        f"Draft content about {unique} GPUs.",
+        NoteStatus.draft,
     )
     try:
         resp = await api_client.get(
@@ -257,8 +263,11 @@ async def test_analyst_sees_own_draft_note(
     await _cleanup_search_data(db)
     unique = "Xy7wKm3"
     await _insert_note(
-        db, analyst_user, f"{unique} Own Draft Note",
-        f"Private draft about {unique} silicon.", NoteStatus.draft
+        db,
+        analyst_user,
+        f"{unique} Own Draft Note",
+        f"Private draft about {unique} silicon.",
+        NoteStatus.draft,
     )
     try:
         resp = await api_client.get(
@@ -288,7 +297,10 @@ async def test_filter_by_source_type(
         db, f"{unique} File Article", f"About {unique} GPU clusters.", SourceType.file
     )
     await _insert_source(
-        db, f"{unique} RSS Article", f"RSS feed about {unique} AI chips.", SourceType.rss
+        db,
+        f"{unique} RSS Article",
+        f"RSS feed about {unique} AI chips.",
+        SourceType.rss,
     )
     try:
         resp = await api_client.get(
@@ -312,8 +324,11 @@ async def test_search_all_type_returns_both(
     await _cleanup_search_data(db)
     unique = "Wn5yTq2"
     await _insert_note(
-        db, analyst_user, f"{unique} Research Note",
-        f"Research on {unique} hardware.", NoteStatus.published
+        db,
+        analyst_user,
+        f"{unique} Research Note",
+        f"Research on {unique} hardware.",
+        NoteStatus.published,
     )
     await _insert_source(
         db, f"{unique} Source Doc", f"Industry data on {unique} chips."
@@ -340,8 +355,9 @@ async def test_search_response_shape(
 ) -> None:
     await _cleanup_search_data(db)
     await _insert_source(
-        db, "Quantum GPU Architecture Overview",
-        "This article covers quantum GPU architectures and next-gen AI chips."
+        db,
+        "Quantum GPU Architecture Overview",
+        "This article covers quantum GPU architectures and next-gen AI chips.",
     )
     try:
         resp = await api_client.get(

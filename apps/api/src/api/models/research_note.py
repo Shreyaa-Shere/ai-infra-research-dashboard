@@ -44,9 +44,7 @@ class ResearchNote(Base):
     slug: Mapped[str | None] = mapped_column(
         String(600), unique=True, nullable=True, index=True
     )
-    tags: Mapped[list[str]] = mapped_column(
-        ARRAY(String), nullable=False, default=list
-    )
+    tags: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
     author_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),

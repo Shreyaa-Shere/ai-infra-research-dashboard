@@ -12,8 +12,10 @@ from httpx import AsyncClient
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models.metric import MetricEntityType, MetricFrequency, MetricPoint, MetricSeries
-
+from api.models.metric import (
+    MetricPoint,
+    MetricSeries,
+)
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -27,7 +29,8 @@ async def _cleanup(db: AsyncSession) -> None:
 async def _make_hw(db: AsyncSession) -> uuid.UUID:
     """Return the ID of an existing HardwareProduct (H100), or create a stub."""
     from sqlalchemy import select
-    from api.models.hardware_product import HardwareProduct, HardwareCategory
+
+    from api.models.hardware_product import HardwareCategory, HardwareProduct
 
     row = (
         await db.execute(select(HardwareProduct).where(HardwareProduct.name == "H100"))

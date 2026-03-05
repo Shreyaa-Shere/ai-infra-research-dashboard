@@ -43,7 +43,9 @@ class DatacenterService:
         if cached:
             return PaginatedResponse[DatacenterResponse].model_validate_json(cached)
 
-        items, total = await _repo.list(session, limit, offset, owner_company_id, status)
+        items, total = await _repo.list(
+            session, limit, offset, owner_company_id, status
+        )
         response = PaginatedResponse[DatacenterResponse](
             items=[DatacenterResponse.model_validate(i) for i in items],
             total=total,

@@ -70,7 +70,8 @@ class MetricService:
         entity_id: uuid.UUID | None = None,
     ) -> PaginatedResponse[MetricSeriesResponse]:
         cache_key = _list_key(
-            limit, offset,
+            limit,
+            offset,
             entity_type.value if entity_type else "",
             str(entity_id) if entity_id else "",
         )
@@ -79,7 +80,9 @@ class MetricService:
             return PaginatedResponse[MetricSeriesResponse].model_validate_json(cached)
 
         series_list, total = await _repo.list_series(
-            session, limit, offset,
+            session,
+            limit,
+            offset,
             entity_type=entity_type,
             entity_id=entity_id,
         )
@@ -147,7 +150,11 @@ class MetricService:
         if not series:
             raise api_error("NOT_FOUND", "Metric series not found", 404)
 
-        fields = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+        fields = {
+            k: v
+            for k, v in data.model_dump(exclude_unset=True).items()
+            if v is not None
+        }
         if fields:
             series = await _repo.update(session, series, fields)
         await session.commit()

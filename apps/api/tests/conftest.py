@@ -19,8 +19,6 @@ from api.auth.hashing import hash_password
 from api.main import app
 from api.models import RefreshToken  # noqa: F401
 from api.models.user import Role, User
-from api.models.company import Company, CompanyType
-from api.models.hardware_product import HardwareCategory, HardwareProduct
 
 _DB_URL = os.getenv(
     "DATABASE_URL",
@@ -39,6 +37,7 @@ _SessionLocal = async_sessionmaker(_engine, expire_on_commit=False)
 # function-scoped event loops, pool connections from loop N are invalid in
 # loop N+1 and cause hangs/Task-pending errors. Replacing it with a NullPool
 # engine for the whole test session fixes this without touching production code.
+
 
 @pytest.fixture(scope="session", autouse=True)
 def patch_app_db_to_nullpool() -> None:
@@ -59,9 +58,11 @@ def patch_app_db_to_nullpool() -> None:
 # 127.0.0.1, so the counter accumulates across tests and starts returning 429.
 # Resetting MemoryStorage before each test keeps the counter at zero.
 
+
 @pytest.fixture(autouse=True)
 def reset_rate_limiter() -> None:
     from api.auth.rate_limit import limiter
+
     limiter._storage.reset()
     yield
 
@@ -72,10 +73,12 @@ def reset_rate_limiter() -> None:
 # that connection is cleanly shut down, the pending read task causes
 # "RuntimeError: Task pending". Closing it after every test prevents this.
 
+
 @pytest_asyncio.fixture(autouse=True)
 async def close_redis_after_test() -> None:
     yield
     import api.services.cache as cache_module
+
     if cache_module._redis is not None:
         try:
             await cache_module._redis.aclose()
@@ -85,6 +88,7 @@ async def close_redis_after_test() -> None:
 
 
 # ── Core fixtures ─────────────────────────────────────────────────────────────
+
 
 @pytest_asyncio.fixture
 async def db() -> AsyncSession:
@@ -141,6 +145,7 @@ async def admin_user(db: AsyncSession) -> User:
     await db.refresh(user)
     yield user
     from sqlalchemy import delete
+
     await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
     await db.execute(delete(User).where(User.id == user.id))
     await db.commit()
@@ -162,6 +167,7 @@ async def analyst_user(db: AsyncSession) -> User:
     await db.refresh(user)
     yield user
     from sqlalchemy import delete
+
     await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
     await db.execute(delete(User).where(User.id == user.id))
     await db.commit()

@@ -40,9 +40,7 @@ class DatacenterRepository:
         items = list(result.scalars().all())
         return items, total
 
-    async def get(
-        self, session: AsyncSession, id: uuid.UUID
-    ) -> DatacenterSite | None:
+    async def get(self, session: AsyncSession, id: uuid.UUID) -> DatacenterSite | None:
         result = await session.execute(
             select(DatacenterSite)
             .where(DatacenterSite.id == id)

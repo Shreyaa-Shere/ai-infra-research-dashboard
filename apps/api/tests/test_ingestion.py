@@ -21,10 +21,13 @@ from httpx import AsyncClient
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models.source_document import IngestionRun, IngestionStatus, RunStatus, SourceDocument, SourceType
-from api.models.user import User
+from api.models.source_document import (
+    IngestionRun,
+    IngestionStatus,
+    SourceDocument,
+    SourceType,
+)
 from api.services.ingestion import IngestionService
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -34,6 +37,7 @@ async def _cleanup(db: AsyncSession) -> None:
     await db.execute(delete(SourceDocument))
     await db.commit()
     from api.services.cache import cache_delete_pattern
+
     try:
         await cache_delete_pattern("sources:*")
         await cache_delete_pattern("ingestion:runs:*")
@@ -75,15 +79,14 @@ def test_compute_hash_differs_for_different_items() -> None:
 
 @pytest.mark.asyncio
 async def test_extractor_returns_matched_entities(db: AsyncSession) -> None:
+    # Ensure H100 exists in DB
+    from sqlalchemy import select
+
     from api.models.hardware_product import HardwareCategory, HardwareProduct
     from api.services.extractor import EntityExtractor
 
-    # Ensure H100 exists in DB
-    from sqlalchemy import select
     existing = (
-        await db.execute(
-            select(HardwareProduct).where(HardwareProduct.name == "H100")
-        )
+        await db.execute(select(HardwareProduct).where(HardwareProduct.name == "H100"))
     ).scalar_one_or_none()
     if not existing:
         hw = HardwareProduct(
@@ -288,7 +291,11 @@ async def test_analyst_can_trigger_run(
     with patch("api.workers.tasks.run_ingestion_task", mock_task):
         resp = await api_client.post(
             "/api/v1/ingestion/run",
-            json={"source_type": "file", "source_name": "local-ingest", "dry_run": True},
+            json={
+                "source_type": "file",
+                "source_name": "local-ingest",
+                "dry_run": True,
+            },
             headers={"Authorization": f"Bearer {analyst_token}"},
         )
 
@@ -355,6 +362,7 @@ async def test_duplicate_hash_is_skipped(db: AsyncSession) -> None:
 
     try:
         from api.repositories.ingestion import IngestionRepository
+
         repo = IngestionRepository()
         found = await repo.get_by_hash(db, content_hash)
         assert found is not None
