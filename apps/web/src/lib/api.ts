@@ -84,6 +84,8 @@ import type {
   ResearchNote,
   ResearchNoteCreate,
   ResearchNoteUpdate,
+  SearchParams,
+  SearchResponse,
   SourceDocumentDetail,
   SourceDocumentSummary,
   SourceType,
@@ -372,4 +374,24 @@ export const ingestionApi = {
 
   getRun: (token: string, id: string) =>
     request<IngestionRunResponse>(`/api/v1/ingestion/runs/${id}`, { token }),
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+
+export const searchApi = {
+  search: (token: string, params: SearchParams) => {
+    const p = new URLSearchParams()
+    p.set('q', params.q)
+    if (params.type) p.set('type', params.type)
+    if (params.limit != null) p.set('limit', String(params.limit))
+    if (params.offset != null) p.set('offset', String(params.offset))
+    if (params.tags?.length) params.tags.forEach((t) => p.append('tags', t))
+    if (params.status) p.set('status', params.status)
+    if (params.entity_type) p.set('entity_type', params.entity_type)
+    if (params.entity_id) p.set('entity_id', params.entity_id)
+    if (params.start) p.set('start', params.start)
+    if (params.end) p.set('end', params.end)
+    if (params.source_type) p.set('source_type', params.source_type)
+    return request<SearchResponse>(`/api/v1/search?${p.toString()}`, { token })
+  },
 }

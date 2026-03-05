@@ -16,6 +16,7 @@ import NoteEditor from './routes/notes/NoteEditor'
 import PublishedNote from './routes/published/PublishedNote'
 import SourceList from './routes/sources/SourceList'
 import SourceDetail from './routes/sources/SourceDetail'
+import SearchPage from './routes/search/SearchPage'
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/notes/:id" element={<NoteEditor />} />
           <Route path="/sources" element={<SourceList />} />
           <Route path="/sources/:id" element={<SourceDetail />} />
+          <Route path="/search" element={<SearchPage />} />
         </Route>
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

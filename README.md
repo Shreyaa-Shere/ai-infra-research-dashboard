@@ -276,6 +276,26 @@ Three sample files with 9 AI hardware articles are included at `data/ingest/samp
 
 See [docs/INGESTION.md](docs/INGESTION.md) for full documentation.
 
+## Unified Search (Slice 6)
+
+Slice 6 adds a full-text search experience across ResearchNotes and SourceDocuments using PostgreSQL native FTS (tsvector + GIN indexes).
+
+### Pages
+
+| URL | Description |
+|---|------|
+| `/search` | Unified search with All/Notes/Sources tabs, filter panel, paginated results |
+
+### REST API
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/v1/search` | any | Full-text search across notes + sources |
+
+**Key parameters:** `q` (required), `type=all|note|source`, `tags`, `status`, `entity_type`, `entity_id`, `source_type`, `start`, `end`, `limit`, `offset`
+
+See [docs/SEARCH.md](docs/SEARCH.md) for full documentation.
+
 ## Where to Put Future Modules
 
 | Concern | Location |

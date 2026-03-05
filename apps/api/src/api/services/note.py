@@ -146,6 +146,7 @@ def _pub_key(slug: str) -> str:
 async def _bust_caches(note_id: uuid.UUID, slug: str | None = None) -> None:
     await cache_delete_pattern(f"{_LIST_PREFIX}:*")
     await cache_delete_pattern(f"{_DETAIL_PREFIX}:{note_id}")
+    await cache_delete_pattern("search:*")
     if slug:
         await cache_delete_pattern(f"{_PUB_PREFIX}:{slug}")
 

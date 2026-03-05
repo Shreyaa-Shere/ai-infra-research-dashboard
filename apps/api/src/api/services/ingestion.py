@@ -177,6 +177,7 @@ class IngestionService:
                 await session.commit()
                 try:
                     await cache_delete_pattern(f"{_SOURCES_PREFIX}:*")
+                    await cache_delete_pattern("search:*")
                 except Exception as cache_exc:
                     logger.warning("Cache invalidation failed (non-fatal): %s", cache_exc)
 

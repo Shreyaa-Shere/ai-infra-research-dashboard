@@ -25,6 +25,7 @@ from api.routes.metrics import router as metrics_router
 from api.routes.metrics import overview_router as metrics_overview_router
 from api.routes.ingestion import router as ingestion_router
 from api.routes.sources import router as sources_router
+from api.routes.search import router as search_router
 from api.settings import settings
 
 setup_logging()
@@ -105,3 +106,4 @@ app.include_router(metrics_router, prefix="/api/v1")
 app.include_router(metrics_overview_router, prefix="/api/v1")
 app.include_router(ingestion_router, prefix="/api/v1")
 app.include_router(sources_router, prefix="/api/v1")
+app.include_router(search_router, prefix="/api/v1")

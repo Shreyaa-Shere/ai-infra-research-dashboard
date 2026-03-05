@@ -280,3 +280,58 @@ export interface IngestionTriggerResponse {
   status: RunStatus
   message: string
 }
+
+// ── Search ────────────────────────────────────────────────────────────────────
+
+export interface NoteSearchResult {
+  id: string
+  type: 'note'
+  title: string
+  snippet: string
+  score: number
+  status: NoteStatus
+  tags: string[]
+  author_id: string
+  slug: string | null
+  published_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SourceSearchResult {
+  id: string
+  type: 'source'
+  title: string
+  snippet: string
+  score: number
+  url: string | null
+  source_name: string
+  source_type: SourceType
+  status: IngestionStatus
+  published_at: string | null
+  created_at: string
+}
+
+export type SearchResult = NoteSearchResult | SourceSearchResult
+
+export interface SearchResponse {
+  items: SearchResult[]
+  total: number
+  limit: number
+  offset: number
+  query: string
+}
+
+export interface SearchParams {
+  q: string
+  type?: 'all' | 'note' | 'source'
+  limit?: number
+  offset?: number
+  tags?: string[]
+  status?: NoteStatus
+  entity_type?: string
+  entity_id?: string
+  start?: string
+  end?: string
+  source_type?: SourceType
+}

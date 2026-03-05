@@ -148,6 +148,27 @@ data/ingest/*.json
 - `worker` — Celery worker, handles `run_ingestion_task` jobs
 - `scheduler` — Celery Beat, triggers periodic ingestion on `INGESTION_INTERVAL_MIN` schedule
 
+## Search Architecture (Slice 6)
+
+```
+GET /api/v1/search?q=...
+        │
+        ▼
+  SearchService (services/search.py)
+        ├── cache lookup — "search:<md5(q+type+filters+role+pagination)>"
+        ├── search_notes()    — to_tsvector('english', title||body) @@ websearch_to_tsquery
+        ├── search_sources()  — to_tsvector('english', title||raw_text) @@ websearch_to_tsquery
+        ├── ts_rank + ts_headline per result
+        ├── merge + sort by score (type=all)
+        └── cache set (60s)
+```
+
+**GIN Indexes** (migration f5a6b7c8d9e0):
+- `ix_research_notes_fts` on `to_tsvector('english', title || body_markdown)`
+- `ix_source_documents_fts` on `to_tsvector('english', title || raw_text)`
+
+**Cache invalidation:** `search:*` is invalidated on note create/update/delete/publish and after every successful ingestion run.
+
 ## Future Slices
 
 1. **Slice 1 — Auth**: JWT-based login, protected routes, user model ✓
@@ -155,3 +176,4 @@ data/ingest/*.json
 3. **Slice 3 — Research Notes + Markdown Editor + Entity Linking + Publish Workflow** ✓
 4. **Slice 4 — MetricsSeries + MetricPoints + Dashboard Aggregates + Charts** ✓
 5. **Slice 5 — Ingestion Pipeline**: SourceDocument + SourceEntityLink + IngestionRun + Celery workers + Sources UI ✓
+6. **Slice 6 — Unified Search**: PostgreSQL FTS + GIN indexes + search endpoint + search UI ✓
