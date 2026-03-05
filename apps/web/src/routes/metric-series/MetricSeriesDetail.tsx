@@ -1,5 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import ErrorState from '../../components/ErrorState'
 import LoadingSkeleton from '../../components/LoadingSkeleton'
@@ -134,10 +143,26 @@ export default function MetricSeriesDetail() {
     )
   }
 
+  const chartData = points
+    ? [...points]
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+        .map((pt) => ({
+          date: new Date(pt.timestamp).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+          value: pt.value,
+        }))
+    : []
+
+  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value : null
+  const firstValue = chartData.length > 0 ? chartData[0].value : null
+  const changePct =
+    latestValue != null && firstValue != null && firstValue !== 0
+      ? ((latestValue - firstValue) / Math.abs(firstValue)) * 100
+      : null
+
   return (
-    <div className="max-w-3xl">
+    <div>
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <Link
           to="/metric-series"
           className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
@@ -173,24 +198,27 @@ export default function MetricSeriesDetail() {
         </div>
       </div>
 
-      {/* Metadata */}
-      <h1 className="text-2xl font-bold text-gray-900">{data.name}</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        {ENTITY_TYPE_LABELS[data.entity_type] ?? data.entity_type}
-      </p>
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left: metadata + data points */}
+        <div className="lg:col-span-2">
+          <h1 className="text-2xl font-bold text-gray-900">{data.name}</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {ENTITY_TYPE_LABELS[data.entity_type] ?? data.entity_type}
+          </p>
 
-      <div className="mt-6 rounded-lg border border-gray-200 p-4">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
-          Series Info
-        </h2>
-        <DetailRow label="Unit" value={data.unit} />
-        <DetailRow label="Frequency" value={data.frequency} />
-        <DetailRow label="Source" value={data.source} />
-        <DetailRow label="Entity ID" value={<span className="font-mono text-xs">{data.entity_id}</span>} />
-      </div>
+          <div className="mt-6 rounded-lg border border-gray-200 p-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+              Series Info
+            </h2>
+            <DetailRow label="Unit" value={data.unit} />
+            <DetailRow label="Frequency" value={data.frequency} />
+            <DetailRow label="Source" value={data.source} />
+            <DetailRow label="Entity ID" value={<span className="font-mono text-xs">{data.entity_id}</span>} />
+          </div>
 
-      {/* Data Points */}
-      <div className="mt-6">
+          {/* Data Points */}
+          <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
             Data Points
@@ -328,11 +356,86 @@ export default function MetricSeriesDetail() {
             </table>
           </div>
         )}
-      </div>
+        </div>{/* end Data Points */}
 
-      <p className="mt-6 text-xs text-gray-400">
-        Created {new Date(data.created_at).toLocaleDateString()}
-      </p>
+          <p className="mt-6 text-xs text-gray-400">
+            Created {new Date(data.created_at).toLocaleDateString()}
+          </p>
+        </div>{/* end left column */}
+
+        {/* Right: chart + stats */}
+        <div className="space-y-4">
+          {/* Trend chart */}
+          <div className="rounded-lg border border-gray-200 p-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+              Trend
+            </h2>
+            {chartData.length < 2 ? (
+              <p className="py-4 text-center text-sm text-gray-400">Not enough data to chart.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10, fill: '#9ca3af' }}
+                    tickLine={false}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: '#9ca3af' }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={40}
+                  />
+                  <Tooltip
+                    contentStyle={{ fontSize: 12, borderRadius: 6 }}
+                    formatter={(v: number) => [`${v.toLocaleString()} ${data.unit}`, data.name]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          {/* Summary stats */}
+          {chartData.length > 0 && (
+            <div className="rounded-lg border border-gray-200 p-4">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+                Summary
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-400">Latest value</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {latestValue?.toLocaleString()}
+                    <span className="ml-1 text-sm font-normal text-gray-400">{data.unit}</span>
+                  </p>
+                </div>
+                {changePct != null && (
+                  <div>
+                    <p className="text-xs text-gray-400">Change (all time)</p>
+                    <p className={`text-sm font-semibold ${changePct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {changePct >= 0 ? '▲' : '▼'} {Math.abs(changePct).toFixed(1)}%
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-gray-400">Data points</p>
+                  <p className="text-sm font-semibold text-gray-700">{points?.length ?? 0}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {showEdit && (
         <MetricSeriesForm initial={data} onClose={() => setShowEdit(false)} />
