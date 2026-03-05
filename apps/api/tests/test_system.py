@@ -8,7 +8,6 @@ Tests for:
 import pytest
 from httpx import AsyncClient
 
-
 # ── /api/v1/system/info ───────────────────────────────────────────────────────
 
 
@@ -32,9 +31,7 @@ async def test_system_info_forbidden_for_analyst(
 
 
 @pytest.mark.asyncio
-async def test_system_info_admin(
-    api_client: AsyncClient, admin_token: str
-) -> None:
+async def test_system_info_admin(api_client: AsyncClient, admin_token: str) -> None:
     resp = await api_client.get(
         "/api/v1/system/info",
         headers={"Authorization": f"Bearer {admin_token}"},
