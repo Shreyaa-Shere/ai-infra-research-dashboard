@@ -128,12 +128,9 @@ test.describe('Admin User Management', () => {
 test.describe('Analyst RBAC', () => {
   test('analyst is redirected away from /admin/users', async ({ page }) => {
     await login(page, ANALYST_EMAIL, ANALYST_PASSWORD)
-    // Use client-side navigation (history API) to avoid a full page reload that
-    // drops in-memory auth state. React Router v6 picks up the popstate event.
-    await page.evaluate(() => {
-      window.history.pushState(null, '', '/admin/users')
-      window.dispatchEvent(new PopStateEvent('popstate'))
-    })
+    // Full navigation: localStorage keeps the refresh token so the silent-refresh
+    // flow restores auth, then AdminRoute sees role=analyst and redirects to /dashboard.
+    await page.goto('/admin/users')
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 8000 })
   })
 
