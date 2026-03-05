@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,7 +75,7 @@ class UserRepository:
     async def revoke_all_refresh_tokens(
         self, session: AsyncSession, user_id: uuid.UUID
     ) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         await session.execute(
             update(RefreshToken)
             .where(RefreshToken.user_id == user_id)
@@ -118,5 +118,5 @@ class UserRepository:
     async def mark_invite_used(
         self, session: AsyncSession, invite: UserInvite
     ) -> None:
-        invite.used_at = datetime.now(timezone.utc)
+        invite.used_at = datetime.now(UTC)
         await session.flush()

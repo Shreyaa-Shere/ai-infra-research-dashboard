@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +28,7 @@ class IngestionRepository:
         run = IngestionRun(
             id=uuid.uuid4(),
             triggered_by=user_id,
-            started_at=datetime.now(tz=timezone.utc),
+            started_at=datetime.now(tz=UTC),
             source_type=source_type,
             source_name=source_name,
             status=RunStatus.running,
@@ -53,7 +53,7 @@ class IngestionRepository:
         stats: dict,
         error_message: str | None = None,
     ) -> IngestionRun:
-        run.finished_at = datetime.now(tz=timezone.utc)
+        run.finished_at = datetime.now(tz=UTC)
         run.stats = stats
         if error_message:
             run.status = RunStatus.error

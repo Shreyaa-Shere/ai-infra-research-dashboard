@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -51,8 +51,9 @@ async def _resolve_entity_display(
     session: AsyncSession, entity_type: EntityType, entity_id: uuid.UUID
 ) -> dict[str, str] | None:
     if entity_type == EntityType.hardware_product:
-        from api.models.hardware_product import HardwareProduct
         from sqlalchemy import select
+
+        from api.models.hardware_product import HardwareProduct
 
         row = (
             await session.execute(
@@ -62,8 +63,9 @@ async def _resolve_entity_display(
         if row:
             return {"name": row.name, "kind": row.category.value}
     elif entity_type == EntityType.company:
-        from api.models.company import Company
         from sqlalchemy import select
+
+        from api.models.company import Company
 
         row = (
             await session.execute(select(Company).where(Company.id == entity_id))
@@ -71,8 +73,9 @@ async def _resolve_entity_display(
         if row:
             return {"name": row.name, "kind": row.type.value}
     elif entity_type == EntityType.datacenter:
-        from api.models.datacenter_site import DatacenterSite
         from sqlalchemy import select
+
+        from api.models.datacenter_site import DatacenterSite
 
         row = (
             await session.execute(
@@ -383,7 +386,7 @@ class NoteService:
             raise api_error("CONFLICT", "Note is already published", 409)
 
         slug = note.slug or _make_slug(note.title, note.id)
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
 
         await _repo.update(
             session,

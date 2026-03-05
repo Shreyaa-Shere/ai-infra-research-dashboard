@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.auth.dependencies import get_current_user, require_role
+from api.auth.dependencies import require_role
 from api.db.session import get_session
 from api.models.user import User
 from api.schemas.ingestion import (

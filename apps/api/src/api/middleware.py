@@ -1,9 +1,6 @@
 import logging
 import uuid
-from collections.abc import Callable, Awaitable
-from typing import Any
 
-from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)

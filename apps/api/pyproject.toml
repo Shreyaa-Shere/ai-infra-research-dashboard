@@ -47,7 +47,13 @@ src = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "B008",   # FastAPI Depends() in argument defaults is the standard pattern
+    "B904",   # raise-without-from-inside-except — we use api_error() helper consistently
+    "UP042",  # str+Enum → StrEnum unsafe for SQLAlchemy enum types mapped to PostgreSQL
+    "SIM105", # contextlib.suppress — try/except/pass fine in async cleanup
+]
 
 [tool.mypy]
 python_version = "3.11"

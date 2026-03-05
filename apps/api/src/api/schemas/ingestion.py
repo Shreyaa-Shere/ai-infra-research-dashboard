@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 
 from api.models.source_document import IngestionStatus, RunStatus, SourceType
 
-
 # ── Ingestion Run ─────────────────────────────────────────────────────────────
 
 

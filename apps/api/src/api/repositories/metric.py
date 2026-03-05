@@ -7,7 +7,12 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models.metric import MetricEntityType, MetricFrequency, MetricPoint, MetricSeries
+from api.models.metric import (
+    MetricEntityType,
+    MetricFrequency,
+    MetricPoint,
+    MetricSeries,
+)
 from api.schemas.metric import MetricPointIn
 
 

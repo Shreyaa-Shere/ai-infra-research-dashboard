@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import select
@@ -49,7 +49,7 @@ async def login(
         id=uuid.uuid4(),
         user_id=user.id,
         token_hash=refresh_hash,
-        expires_at=datetime.now(timezone.utc)
+        expires_at=datetime.now(UTC)
         + timedelta(days=settings.jwt_refresh_ttl_days),
     )
     session.add(token)
@@ -78,11 +78,11 @@ async def refresh(
         raise api_error("INVALID_REFRESH_TOKEN", "Refresh token not found", 401)
     if stored.revoked_at is not None:
         raise api_error("TOKEN_REVOKED", "Refresh token has been revoked", 401)
-    if stored.expires_at < datetime.now(timezone.utc):
+    if stored.expires_at < datetime.now(UTC):
         raise api_error("TOKEN_EXPIRED", "Refresh token has expired", 401)
 
     # Rotate: revoke old token before issuing new one
-    stored.revoked_at = datetime.now(timezone.utc)
+    stored.revoked_at = datetime.now(UTC)
 
     user = await session.get(User, stored.user_id)
     if not user or not user.is_active:
@@ -96,7 +96,7 @@ async def refresh(
         id=uuid.uuid4(),
         user_id=user.id,
         token_hash=refresh_hash,
-        expires_at=datetime.now(timezone.utc)
+        expires_at=datetime.now(UTC)
         + timedelta(days=settings.jwt_refresh_ttl_days),
     )
     session.add(new_token)
@@ -121,7 +121,7 @@ async def logout(
     stored = result.scalar_one_or_none()
 
     if stored and stored.revoked_at is None:
-        stored.revoked_at = datetime.now(timezone.utc)
+        stored.revoked_at = datetime.now(UTC)
         await session.commit()
 
     return Response(status_code=204)

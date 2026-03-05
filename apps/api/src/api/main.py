@@ -12,20 +12,20 @@ from slowapi.errors import RateLimitExceeded
 from api.auth.rate_limit import limiter
 from api.logging_config import setup_logging
 from api.middleware import RequestIdMiddleware, SecurityHeadersMiddleware
-from api.routes import health, version
+from api.routes import audit as audit_router
 from api.routes import auth as auth_router
-from api.routes import users as users_router
-from api.routes import hardware_products as hardware_products_router
 from api.routes import companies as companies_router
 from api.routes import datacenters as datacenters_router
+from api.routes import hardware_products as hardware_products_router
+from api.routes import health, version
 from api.routes import notes as notes_router
 from api.routes import published as published_router
-from api.routes import audit as audit_router
-from api.routes.metrics import router as metrics_router
-from api.routes.metrics import overview_router as metrics_overview_router
+from api.routes import users as users_router
 from api.routes.ingestion import router as ingestion_router
-from api.routes.sources import router as sources_router
+from api.routes.metrics import overview_router as metrics_overview_router
+from api.routes.metrics import router as metrics_router
 from api.routes.search import router as search_router
+from api.routes.sources import router as sources_router
 from api.settings import settings
 
 setup_logging()

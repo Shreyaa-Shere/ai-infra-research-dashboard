@@ -38,10 +38,15 @@ type AuthAction =
   | { type: 'REFRESH_SUCCESS'; payload: { accessToken: string; refreshToken: string } }
   | { type: 'LOGOUT' }
 
+// Start loading if there's a stored refresh token — prevents ProtectedRoute from
+// redirecting to /login on first render before the silent-refresh effect runs.
+const _hasStoredToken =
+  typeof localStorage !== 'undefined' && !!localStorage.getItem('rft')
+
 const initialState: AuthState = {
   user: null,
   accessToken: null,
-  isLoading: false,
+  isLoading: _hasStoredToken,
   error: null,
 }
 
@@ -85,15 +90,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem(REFRESH_KEY)
     if (stored) {
+      dispatch({ type: 'SET_LOADING' })
       authApi
         .refresh(stored)
-        .then((data) =>
+        .then(async (data) => {
+          const user = await authApi.me(data.access_token)
           dispatch({
-            type: 'REFRESH_SUCCESS',
-            payload: { accessToken: data.access_token, refreshToken: data.refresh_token },
+            type: 'LOGIN_SUCCESS',
+            payload: { user, accessToken: data.access_token, refreshToken: data.refresh_token },
           })
-        )
-        .catch(() => localStorage.removeItem(REFRESH_KEY))
+        })
+        .catch(() => {
+          localStorage.removeItem(REFRESH_KEY)
+          dispatch({ type: 'LOGOUT' })
+        })
     }
   }, [])
 

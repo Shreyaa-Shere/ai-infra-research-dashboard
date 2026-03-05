@@ -10,7 +10,7 @@ from fastapi import Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models.metric import MetricEntityType, MetricFrequency
+from api.models.metric import MetricEntityType
 from api.models.user import Role, User
 from api.repositories.metric import MetricRepository
 from api.schemas.errors import api_error

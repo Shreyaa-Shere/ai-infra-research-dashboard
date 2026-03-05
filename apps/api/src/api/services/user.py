@@ -1,22 +1,27 @@
 from __future__ import annotations
 
 import json
+import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth.jwt import hash_token
-from api.models.user import Role, User
+from api.models.user import User
 from api.repositories.note import AuditLogRepository
 from api.repositories.user import UserRepository
 from api.schemas.errors import api_error
 from api.schemas.pagination import PaginatedResponse
-from api.schemas.user import AcceptInviteRequest, UserAdminOut, UserInviteCreate, UserInviteResponse, UserUpdate
+from api.schemas.user import (
+    AcceptInviteRequest,
+    UserAdminOut,
+    UserInviteCreate,
+    UserInviteResponse,
+    UserUpdate,
+)
 from api.settings import settings
-
-import secrets
 
 _repo = UserRepository()
 _audit = AuditLogRepository()
@@ -42,7 +47,7 @@ class UserService:
 
         raw_token = secrets.token_urlsafe(32)
         token_hash = hash_token(raw_token)
-        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.invite_token_ttl_days)
+        expires_at = datetime.now(UTC) + timedelta(days=settings.invite_token_ttl_days)
 
         invite = await _repo.create_invite(
             session,
@@ -87,7 +92,7 @@ class UserService:
             raise api_error("INVITE_INVALID", "Invalid or expired invite token", 400)
         if invite.used_at is not None:
             raise api_error("INVITE_USED", "This invite has already been used", 400)
-        if invite.expires_at < datetime.now(timezone.utc):
+        if invite.expires_at < datetime.now(UTC):
             raise api_error("INVITE_EXPIRED", "This invite has expired", 400)
 
         # Check email not already registered (race condition guard)

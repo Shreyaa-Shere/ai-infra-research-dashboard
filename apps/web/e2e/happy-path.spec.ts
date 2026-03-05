@@ -69,7 +69,7 @@ test.describe('Dashboard', () => {
     await expect(page.locator('text=Companies')).toBeVisible()
     await expect(page.locator('text=Research Notes')).toBeVisible()
     await expect(page.locator('text=Sources')).toBeVisible()
-    await expect(page.locator('text=Search')).toBeVisible()
+    await expect(page.locator('a[href="/search"]')).toBeVisible()
   })
 
   test('admin sees User Management in sidebar', async ({ page }) => {
@@ -83,13 +83,15 @@ test.describe('Search', () => {
   })
 
   test('navigating to /search shows the search input', async ({ page }) => {
-    await page.click('text=Search')
+    await page.click('a[href="/search"]')
     await expect(page).toHaveURL(/\/search/)
     await expect(page.locator('input[placeholder*="Search"]')).toBeVisible()
   })
 
   test('searching for "H100" returns results', async ({ page }) => {
-    await page.goto('/search')
+    // Navigate via sidebar click to avoid auth rehydration on full page reload
+    await page.click('a[href="/search"]')
+    await expect(page).toHaveURL(/\/search/)
     await page.fill('input[placeholder*="Search"]', 'H100')
     await page.keyboard.press('Enter')
     // Wait for results (debounced 400ms + network)
@@ -110,13 +112,13 @@ test.describe('Admin User Management', () => {
   })
 
   test('users table shows at least the admin user', async ({ page }) => {
-    await page.goto('/admin/users')
+    await page.click('text=User Management')
     await expect(page.locator('[data-testid="users-table"]')).toBeVisible({ timeout: 8000 })
     await expect(page.locator(`text=${ADMIN_EMAIL}`)).toBeVisible()
   })
 
   test('invite modal opens and shows email field', async ({ page }) => {
-    await page.goto('/admin/users')
+    await page.click('text=User Management')
     await page.click('[data-testid="invite-user-button"]')
     await expect(page.locator('[data-testid="invite-modal"]')).toBeVisible()
     await expect(page.locator('[data-testid="invite-email-input"]')).toBeVisible()
@@ -126,8 +128,13 @@ test.describe('Admin User Management', () => {
 test.describe('Analyst RBAC', () => {
   test('analyst is redirected away from /admin/users', async ({ page }) => {
     await login(page, ANALYST_EMAIL, ANALYST_PASSWORD)
-    await page.goto('/admin/users')
-    await expect(page).toHaveURL(/\/dashboard/)
+    // Use client-side navigation (history API) to avoid a full page reload that
+    // drops in-memory auth state. React Router v6 picks up the popstate event.
+    await page.evaluate(() => {
+      window.history.pushState(null, '', '/admin/users')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 8000 })
   })
 
   test('analyst does not see User Management in sidebar', async ({ page }) => {

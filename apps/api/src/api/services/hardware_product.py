@@ -1,17 +1,16 @@
-import json
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models.hardware_product import HardwareCategory, HardwareProduct
+from api.models.hardware_product import HardwareCategory
 from api.repositories.hardware_product import HardwareProductRepository
+from api.schemas.errors import api_error
 from api.schemas.hardware_product import (
     HardwareProductCreate,
     HardwareProductResponse,
     HardwareProductUpdate,
 )
 from api.schemas.pagination import PaginatedResponse
-from api.schemas.errors import api_error
 from api.services.cache import cache_delete_pattern, cache_get, cache_set
 
 _repo = HardwareProductRepository()

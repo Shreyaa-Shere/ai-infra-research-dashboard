@@ -11,13 +11,12 @@ import hashlib
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models.source_document import (
-    IngestionRun,
     IngestionStatus,
     RunStatus,
     SourceDocument,
@@ -261,7 +260,7 @@ class IngestionService:
             published_at=published_at,
             raw_text=raw_text or None,
             content_hash=content_hash,
-            created_at=datetime.now(tz=timezone.utc),
+            created_at=datetime.now(tz=UTC),
             source_type=source_type,
             source_name=source_name,
             status=IngestionStatus.ingested,
@@ -413,7 +412,7 @@ def _parse_dt(value: str | None) -> datetime | None:
         try:
             dt = datetime.strptime(value, fmt)
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
+                dt = dt.replace(tzinfo=UTC)
             return dt
         except ValueError:
             continue
