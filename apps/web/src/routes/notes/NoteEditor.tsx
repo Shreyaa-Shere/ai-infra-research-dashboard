@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useNote, useCreateNote, useUpdateNote, usePublishNote, useDeleteNote } from '../../hooks/useNotes'
@@ -217,9 +217,17 @@ export default function NoteEditor() {
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">
-          {isNew ? 'New Research Note' : 'Edit Note'}
-        </h1>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/notes"
+            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+          >
+            ← Back to Research Notes
+          </Link>
+          <h1 className="text-xl font-semibold text-gray-900">
+            {isNew ? 'New Research Note' : 'Edit Note'}
+          </h1>
+        </div>
         {!isNew && existing?.status === 'published' && existing.slug && (
           <a
             href={`/published/${existing.slug}`}
