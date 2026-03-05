@@ -1,0 +1,23 @@
+[
+  {
+    "title": "NVIDIA Blackwell B200 Production Ramp: What to Expect in 2025",
+    "url": "https://example.com/nvidia-blackwell-b200-2025",
+    "source_name": "Datacenter Dynamics",
+    "published_at": "2024-12-01T09:30:00Z",
+    "raw_text": "NVIDIA's Blackwell B200 GPU is entering mass production with TSMC's 4NP process node. The B200 features 192GB HBM3e memory and 20 PFLOPS of FP8 compute, roughly 5x the throughput of H100. Initial shipments are expected to go to Microsoft, Google, Meta, and Amazon in Q1 2025. NVIDIA's NVLink 5.0 interconnect enables 72-chip NVL72 racks with 1.44 EFLOPS aggregate compute. Supply chain analysts estimate 500,000-600,000 B200 units will ship in 2025."
+  },
+  {
+    "title": "European AI Datacenter Buildout: Equinix and Digital Realty Lead Expansion",
+    "url": "https://example.com/europe-ai-datacenter-expansion",
+    "source_name": "Infrastructure Monitor",
+    "published_at": "2024-12-10T14:00:00Z",
+    "raw_text": "European datacenter operators are accelerating AI infrastructure buildouts ahead of anticipated demand from EU-based AI labs and enterprises. Equinix is expanding its Frankfurt and Amsterdam campuses with dedicated AI compute zones. Digital Realty is breaking ground on new facilities in Paris and Stockholm optimized for high-density GPU rack deployments. EU regulations on data sovereignty are driving local compute demand from organizations unable to use US-based clouds. Power availability remains the key constraint across European markets."
+  },
+  {
+    "title": "Qualcomm Cloud AI 100 Ultra Targets Efficient LLM Inference at Scale",
+    "url": "https://example.com/qualcomm-cloud-ai-100-ultra",
+    "source_name": "AI Hardware Weekly",
+    "published_at": "2024-12-15T10:00:00Z",
+    "raw_text": "Qualcomm has released its Cloud AI 100 Ultra accelerator targeting energy-efficient LLM inference deployments. The chip delivers 900 TOPS of INT8 compute at under 75W TDP, targeting edge inference servers and cost-sensitive cloud deployments. Microsoft and Meta have evaluated the chip for inference-at-scale workloads where per-token energy cost matters more than peak throughput. NVIDIA's H100 and AMD MI300X still dominate training, but Qualcomm believes the inference market will segment significantly as LLM deployment scales."
+  }
+]

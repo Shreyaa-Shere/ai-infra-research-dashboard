@@ -21,17 +21,21 @@ FastAPI (apps/api)          ← stateless, async
          └── Redis           ← list-endpoint cache (60s TTL)
 ```
 
-## Domain Entity Relationships (Slice 2 + 3 + 4)
+## Domain Entity Relationships (Slice 2 + 3 + 4 + 5)
 
 ```
 User
   │ id, email, hashed_password, role, is_active
   │
-  └──< ResearchNote            (author_id FK → User, CASCADE)
-         │ id, title, body_markdown, status, slug, tags[], published_at
-         │
-         └──< NoteEntityLink   (note_id FK → ResearchNote, CASCADE)
-                id, entity_type, entity_id  ← polymorphic ref (app-level FK)
+  ├──< ResearchNote            (author_id FK → User, CASCADE)
+  │      │ id, title, body_markdown, status, slug, tags[], published_at
+  │      │
+  │      └──< NoteEntityLink   (note_id FK → ResearchNote, CASCADE)
+  │             id, entity_type, entity_id  ← polymorphic ref (app-level FK)
+  │
+  └──< IngestionRun            (triggered_by FK → User, SET NULL)
+         id, source_type, source_name, status, dry_run,
+         started_at, finished_at, stats (JSONB), error_message
 
 AuditLog                       (actor_user_id FK → User, SET NULL)
   id, action, entity_type, entity_id, meta_json
@@ -50,6 +54,15 @@ MetricSeries                   (entity_id is app-level, no hard FK)
   │
   └──< MetricPoint             (metric_series_id FK → MetricSeries, CASCADE)
          id, timestamp, value
+
+SourceDocument                 (standalone, deduplicated by content_hash)
+  │ id, title, url, publisher, published_at, raw_text
+  │ content_hash (UNIQUE), extracted_entities (JSONB)
+  │ source_type, source_name, status, created_at
+  │
+  └──< SourceEntityLink        (source_document_id FK → SourceDocument, CASCADE)
+         id, entity_type, entity_id, entity_name
+         ← polymorphic ref; entity_type reuses existing entity_type Postgres enum
 ```
 
 ### Enums
@@ -62,6 +75,9 @@ MetricSeries                   (entity_id is app-level, no hard FK)
 | `note_status` | draft, review, published |
 | `entity_type` | hardware_product, company, datacenter |
 | `metric_frequency` | daily, weekly, monthly |
+| `source_type` | rss, json, file |
+| `ingestion_status` | ingested, skipped, error |
+| `run_status` | running, success, partial, error |
 
 ### Backend Layer Responsibilities
 
@@ -106,10 +122,36 @@ MetricSeries                   (entity_id is app-level, no hard FK)
 | Frontend data fetching | TanStack Query; no manual `fetch` outside `lib/` |
 | Validation | Zod on frontend, Pydantic on backend |
 
+## Ingestion Pipeline (Slice 5)
+
+```
+data/ingest/*.json
+        │
+        ▼
+  Celery Worker / make ingest
+        │
+        ▼
+  IngestionService.execute_run()
+        ├── _load_from_files()       read *.json from INGEST_DIR
+        ├── _compute_hash()          sha256 idempotency key
+        ├── repo.get_by_hash()       skip duplicates
+        ├── SourceDocument insert
+        ├── EntityExtractor.extract() case-insensitive name match vs DB
+        └── SourceEntityLink inserts
+```
+
+**Idempotency:** `sha256(title|url|published_at|raw_text[:500])` — re-running always skips already-ingested documents.
+
+**Entity extraction:** Loads all HardwareProduct/Company/DatacenterSite names from the DB at extraction time and matches them case-insensitively against `title + raw_text`.
+
+**Workers:**
+- `worker` — Celery worker, handles `run_ingestion_task` jobs
+- `scheduler` — Celery Beat, triggers periodic ingestion on `INGESTION_INTERVAL_MIN` schedule
+
 ## Future Slices
 
 1. **Slice 1 — Auth**: JWT-based login, protected routes, user model ✓
 2. **Slice 2 — Core domain entities**: HardwareProduct, Company, DatacenterSite, CRUD APIs, list/detail UI ✓
 3. **Slice 3 — Research Notes + Markdown Editor + Entity Linking + Publish Workflow** ✓
 4. **Slice 4 — MetricsSeries + MetricPoints + Dashboard Aggregates + Charts** ✓
-5. **Slice 5 — Full-text Search + Advanced Filters**
+5. **Slice 5 — Ingestion Pipeline**: SourceDocument + SourceEntityLink + IngestionRun + Celery workers + Sources UI ✓

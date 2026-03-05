@@ -9,3 +9,6 @@ from api.models.research_note import NoteEntityLink as NoteEntityLink
 from api.models.research_note import AuditLog as AuditLog
 from api.models.metric import MetricSeries as MetricSeries
 from api.models.metric import MetricPoint as MetricPoint
+from api.models.source_document import SourceDocument as SourceDocument
+from api.models.source_document import SourceEntityLink as SourceEntityLink
+from api.models.source_document import IngestionRun as IngestionRun

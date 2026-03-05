@@ -1,4 +1,4 @@
-.PHONY: dev down logs lint format test migrate makemigrations seed
+.PHONY: dev down logs lint format test migrate makemigrations seed ingest
 
 COMPOSE = docker compose -f infra/docker-compose.yml
 
@@ -31,3 +31,6 @@ makemigrations:
 
 seed:
 	$(COMPOSE) exec api python scripts/seed.py
+
+ingest:
+	$(COMPOSE) exec api python -c "import asyncio; from api.workers.tasks import _async_periodic_run; asyncio.run(_async_periodic_run())"

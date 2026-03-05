@@ -6,6 +6,7 @@ const navLinks = [
   { to: '/companies', label: 'Companies' },
   { to: '/datacenters', label: 'Datacenters' },
   { to: '/notes', label: 'Research Notes' },
+  { to: '/sources', label: 'Sources' },
 ]
 
 export default function Layout() {

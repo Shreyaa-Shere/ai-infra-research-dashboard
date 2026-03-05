@@ -222,3 +222,61 @@ export interface MetricsOverview {
   kpis: KPIBlock[]
   charts: ChartSeries[]
 }
+
+// ── Ingestion / Sources ────────────────────────────────────────────────────────
+
+export type SourceType = 'rss' | 'json' | 'file'
+export type IngestionStatus = 'ingested' | 'skipped' | 'error'
+export type RunStatus = 'running' | 'success' | 'partial' | 'error'
+
+export interface SourceEntityLinkResponse {
+  entity_type: EntityType
+  entity_id: string
+  entity_name: string | null
+}
+
+export interface SourceDocumentSummary {
+  id: string
+  title: string
+  url: string | null
+  publisher: string | null
+  source_name: string
+  source_type: SourceType
+  published_at: string | null
+  status: IngestionStatus
+  entity_count: number
+  created_at: string
+}
+
+export interface SourceDocumentDetail extends SourceDocumentSummary {
+  raw_text: string | null
+  content_hash: string
+  extracted_entities: Record<string, Array<{ id: string; name: string }>> | null
+  error_message: string | null
+  entity_links: SourceEntityLinkResponse[]
+}
+
+export interface IngestionRunResponse {
+  id: string
+  source_type: SourceType
+  source_name: string
+  status: RunStatus
+  dry_run: boolean
+  started_at: string
+  finished_at: string | null
+  stats: Record<string, number> | null
+  triggered_by: string | null
+  error_message: string | null
+}
+
+export interface IngestionTriggerRequest {
+  source_type: SourceType
+  source_name: string
+  dry_run?: boolean
+}
+
+export interface IngestionTriggerResponse {
+  run_id: string
+  status: RunStatus
+  message: string
+}

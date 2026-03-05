@@ -36,6 +36,7 @@ make seed                   # creates the default admin user
 | `make migrate` | Apply pending Alembic migrations |
 | `make makemigrations MSG="..."` | Create new Alembic revision |
 | `make seed` | Create default admin user (idempotent) |
+| `make ingest` | Run a one-shot ingestion from `data/ingest/` |
 
 > `make lint`, `make test`, `make migrate`, `make seed` require `make dev` to be running first.
 
@@ -209,6 +210,71 @@ Slice 4 adds a `MetricSeries` + `MetricPoint` time-series model for tracking num
 - **EU AI DC Power Usage** (datacenter → EU AI Datacenter, unit: MW)
 
 See [docs/METRICS.md](docs/METRICS.md) for full documentation.
+
+## Ingestion Pipeline (Slice 5)
+
+Slice 5 adds a full ingestion pipeline: file-based JSON ingest, idempotent deduplication (sha256 content hash), rules-based entity extraction, and Celery background workers.
+
+### Services
+
+| Service | Description |
+|---|---|
+| `worker` | Celery worker — processes ingestion tasks |
+| `scheduler` | Celery Beat — triggers periodic ingestion every `INGESTION_INTERVAL_MIN` minutes |
+
+### Pages
+
+| URL | Description |
+|---|---|
+| `/sources` | List ingested documents with type/search filters; "Run Ingestion" button for analyst+ |
+| `/sources/:id` | Document detail — extracted entity chips, raw text, entity breakdown |
+
+### REST API
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/ingestion/run` | analyst+ | Trigger ingestion run (async, 202) |
+| `GET` | `/api/v1/ingestion/runs` | analyst+ | List all runs (paginated) |
+| `GET` | `/api/v1/ingestion/runs/{id}` | analyst+ | Get run status + stats |
+| `GET` | `/api/v1/sources` | viewer+ | List source documents |
+| `GET` | `/api/v1/sources/{id}` | viewer+ | Get document detail with entity links |
+
+### Running ingestion
+
+```bash
+# One-shot (no Celery needed — runs directly in the api container)
+make ingest
+
+# Or trigger via API
+TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"analyst@example.com","password":"Analystpass1!"}' | jq -r .access_token)
+
+curl -X POST http://localhost:8000/api/v1/ingestion/run \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"source_type":"file","source_name":"local-ingest"}'
+```
+
+### Adding ingest data
+
+Place JSON files in `data/ingest/`. Each file must be an array of objects:
+
+```json
+[
+  {
+    "title": "Article Title",
+    "url": "https://example.com/article",
+    "source_name": "my-feed",
+    "published_at": "2024-01-15T10:00:00Z",
+    "raw_text": "Full text content..."
+  }
+]
+```
+
+Three sample files with 9 AI hardware articles are included at `data/ingest/sample{1,2,3}.json`.
+
+See [docs/INGESTION.md](docs/INGESTION.md) for full documentation.
 
 ## Where to Put Future Modules
 

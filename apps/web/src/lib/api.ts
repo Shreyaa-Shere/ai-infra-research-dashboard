@@ -67,6 +67,9 @@ import type {
   HardwareProduct,
   HardwareProductCreate,
   HardwareProductUpdate,
+  IngestionTriggerRequest,
+  IngestionTriggerResponse,
+  IngestionRunResponse,
   LinkedEntityDisplay,
   LinkedEntityInput,
   MetricEntityType,
@@ -81,6 +84,9 @@ import type {
   ResearchNote,
   ResearchNoteCreate,
   ResearchNoteUpdate,
+  SourceDocumentDetail,
+  SourceDocumentSummary,
+  SourceType,
 } from './entities'
 
 // ── Auth calls ────────────────────────────────────────────────────────────────
@@ -330,4 +336,40 @@ export const metricsApi = {
     ),
 
   exportCsvUrl: (id: string) => `${BASE}/api/v1/metric-series/${id}/export.csv`,
+}
+
+// ── Sources ───────────────────────────────────────────────────────────────────
+
+export const sourcesApi = {
+  list: (
+    token: string,
+    params: { limit?: number; offset?: number; source_type?: SourceType; q?: string } = {}
+  ) =>
+    request<PaginatedResponse<SourceDocumentSummary>>(
+      `/api/v1/sources${qs(params)}`,
+      { token }
+    ),
+
+  get: (token: string, id: string) =>
+    request<SourceDocumentDetail>(`/api/v1/sources/${id}`, { token }),
+}
+
+// ── Ingestion ─────────────────────────────────────────────────────────────────
+
+export const ingestionApi = {
+  trigger: (token: string, data: IngestionTriggerRequest) =>
+    request<IngestionTriggerResponse>('/api/v1/ingestion/run', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  listRuns: (token: string, params: { limit?: number; offset?: number } = {}) =>
+    request<PaginatedResponse<IngestionRunResponse>>(
+      `/api/v1/ingestion/runs${qs(params)}`,
+      { token }
+    ),
+
+  getRun: (token: string, id: string) =>
+    request<IngestionRunResponse>(`/api/v1/ingestion/runs/${id}`, { token }),
 }

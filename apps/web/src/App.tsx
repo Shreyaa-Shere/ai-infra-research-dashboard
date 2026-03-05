@@ -14,6 +14,8 @@ import DatacenterDetail from './routes/datacenters/DatacenterDetail'
 import NoteList from './routes/notes/NoteList'
 import NoteEditor from './routes/notes/NoteEditor'
 import PublishedNote from './routes/published/PublishedNote'
+import SourceList from './routes/sources/SourceList'
+import SourceDetail from './routes/sources/SourceDetail'
 
 export default function App() {
   return (
@@ -33,6 +35,8 @@ export default function App() {
           <Route path="/notes" element={<NoteList />} />
           <Route path="/notes/new" element={<NoteEditor />} />
           <Route path="/notes/:id" element={<NoteEditor />} />
+          <Route path="/sources" element={<SourceList />} />
+          <Route path="/sources/:id" element={<SourceDetail />} />
         </Route>
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

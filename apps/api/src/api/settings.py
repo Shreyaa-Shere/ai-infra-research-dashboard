@@ -28,5 +28,11 @@ class Settings(BaseSettings):
     admin_email: str = "admin@example.com"
     admin_password: str = "changeme123!"
 
+    # ── Ingestion ─────────────────────────────────────────────────────────────
+    ingestion_source_type: str = "file"
+    ingestion_source_name: str = "local-ingest"
+    ingestion_interval_min: int = 60
+    ingest_dir: str = "/app/data/ingest"
+
 
 settings = Settings()

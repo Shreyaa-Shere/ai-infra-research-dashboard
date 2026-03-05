@@ -34,10 +34,18 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       APP_VERSION: ${APP_VERSION:-0.1.0}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-a-long-random-string}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme123!}
+      INGESTION_SOURCE_TYPE: ${INGESTION_SOURCE_TYPE:-file}
+      INGESTION_SOURCE_NAME: ${INGESTION_SOURCE_NAME:-local-ingest}
+      INGESTION_INTERVAL_MIN: ${INGESTION_INTERVAL_MIN:-60}
+      INGEST_DIR: /app/data/ingest
     ports:
       - "8000:8000"
     volumes:
       - ../apps/api:/app
+      - ../data/ingest:/app/data/ingest:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,6 +56,47 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  worker:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    command: celery -A api.workers.celery_app worker --loglevel=info --concurrency=2
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/airesearch}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      INGESTION_SOURCE_TYPE: ${INGESTION_SOURCE_TYPE:-file}
+      INGESTION_SOURCE_NAME: ${INGESTION_SOURCE_NAME:-local-ingest}
+      INGESTION_INTERVAL_MIN: ${INGESTION_INTERVAL_MIN:-60}
+      INGEST_DIR: /app/data/ingest
+    volumes:
+      - ../apps/api:/app
+      - ../data/ingest:/app/data/ingest:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    command: celery -A api.workers.celery_app beat --loglevel=info
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/airesearch}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      INGESTION_SOURCE_TYPE: ${INGESTION_SOURCE_TYPE:-file}
+      INGESTION_SOURCE_NAME: ${INGESTION_SOURCE_NAME:-local-ingest}
+      INGESTION_INTERVAL_MIN: ${INGESTION_INTERVAL_MIN:-60}
+      INGEST_DIR: /app/data/ingest
+    volumes:
+      - ../apps/api:/app
+      - ../data/ingest:/app/data/ingest:ro
+    depends_on:
+      - redis
 
   web:
     build:

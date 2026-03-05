@@ -1,0 +1,23 @@
+[
+  {
+    "title": "NVIDIA H100 Shipments Surge in Q3 2024 as Hyperscaler Demand Peaks",
+    "url": "https://example.com/nvidia-h100-q3-2024",
+    "source_name": "AI Hardware Weekly",
+    "published_at": "2024-09-15T10:00:00Z",
+    "raw_text": "NVIDIA reported record H100 GPU shipments in Q3 2024, driven by massive orders from Microsoft, Google, and Amazon. The H100 80GB SXM5 remains the dominant training accelerator for large language models. Meta has also deployed significant H100 clusters across its US West datacenters for Llama 3 training. Supply constraints have eased as TSMC ramps production at its Arizona fab. AMD's MI300X is gaining ground but NVIDIA still commands over 80% of the AI accelerator market."
+  },
+  {
+    "title": "Google TPU v5 Deployment Across US-East Datacenter Clusters",
+    "url": "https://example.com/google-tpu-v5-deployment",
+    "source_name": "AI Hardware Weekly",
+    "published_at": "2024-10-02T14:30:00Z",
+    "raw_text": "Google has begun large-scale deployment of its TPU v5e chips across its US-East datacenter regions. The new pods offer 2x the matrix multiply throughput of TPU v4 with 40% lower power draw per PFLOP. Google claims TPU v5e delivers best-in-class performance-per-watt for transformer workloads. DeepMind and Google Brain teams are the primary internal users. The chips are also available via Google Cloud for external customers running JAX and TensorFlow workloads."
+  },
+  {
+    "title": "AMD MI300X Wins Major Cloud Contracts as NVIDIA Supply Tightens",
+    "url": "https://example.com/amd-mi300x-cloud",
+    "source_name": "Datacenter Dynamics",
+    "published_at": "2024-10-18T09:00:00Z",
+    "raw_text": "AMD's MI300X accelerator has won significant cloud deployment contracts from Microsoft Azure and Oracle Cloud. The chip's 192GB HBM3 capacity makes it attractive for large model inference and fine-tuning. Microsoft has integrated MI300X into its Azure NDv5 series, competing directly with NVIDIA H100 instances. AMD claims competitive performance on LLM inference benchmarks. Intel's Gaudi 3 is also competing but AMD holds the stronger position in HBM capacity per chip."
+  }
+]

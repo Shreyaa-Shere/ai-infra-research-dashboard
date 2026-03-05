@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Meta's New Louisiana Datacenter Signals $10B AI Infrastructure Push",
+    "url": "https://example.com/meta-louisiana-datacenter",
+    "source_name": "Infrastructure Monitor",
+    "published_at": "2024-11-05T08:00:00Z",
+    "raw_text": "Meta Platforms has broken ground on a massive new datacenter campus in Louisiana, part of its $10 billion AI infrastructure investment plan for 2025. The facility will house tens of thousands of NVIDIA H100 and next-generation Blackwell GPUs. Meta's infrastructure team is targeting 2GW of total AI compute capacity by end of 2025. The Louisiana site joins existing US West and EU datacenters in Meta's AI training network. Power agreements with local utilities are already in place."
+  },
+  {
+    "title": "Intel Gaudi 3 Benchmarks: Competitive on Inference, Lags on Training",
+    "url": "https://example.com/intel-gaudi3-benchmarks",
+    "source_name": "AI Hardware Weekly",
+    "published_at": "2024-11-12T11:00:00Z",
+    "raw_text": "Intel's Gaudi 3 accelerator shows strong inference performance in third-party benchmarks, particularly for INT8 and FP8 precision tasks. However, training performance on large transformer models still lags behind NVIDIA H100 and AMD MI300X. Intel has focused its Gaudi 3 positioning on inference-heavy enterprise workloads where total cost of ownership matters more than peak throughput. Oracle and Supermicro are key OEM partners for Gaudi 3 server platforms."
+  },
+  {
+    "title": "AWS Trainium 2 Powers New EC2 Trn2 Instances for LLM Training",
+    "url": "https://example.com/aws-trainium2-ec2-trn2",
+    "source_name": "Cloud Native Journal",
+    "published_at": "2024-11-20T16:00:00Z",
+    "raw_text": "Amazon Web Services has launched EC2 Trn2 instances powered by its second-generation Trainium 2 chip. The new instances offer up to 100Gbps NeuronLink interconnect bandwidth and are designed for training models with 100B+ parameters. Amazon claims Trainium 2 delivers 4x the performance of Trainium 1 with 2x better energy efficiency. Microsoft Azure and Google Cloud are the primary competitors for AI training cloud services. AWS is also deploying Trainium 2 internally for Amazon Alexa and Titan model training."
+  }
+]
