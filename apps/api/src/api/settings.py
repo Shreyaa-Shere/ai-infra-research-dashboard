@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     # ── App ───────────────────────────────────────────────────────────────────
     app_version: str = "0.1.0"
+    environment: str = "local"
     log_level: str = "INFO"
 
     # ── Database ──────────────────────────────────────────────────────────────

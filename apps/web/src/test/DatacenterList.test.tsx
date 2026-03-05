@@ -4,32 +4,28 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import * as AuthModule from '../store/AuthContext'
-import HardwareProductList from '../routes/hardware-products/HardwareProductList'
+import DatacenterList from '../routes/datacenters/DatacenterList'
 
 const MOCK_RESPONSE = {
   items: [
     {
-      id: 'uuid-1',
-      name: 'H100',
-      vendor: 'NVIDIA',
-      category: 'GPU',
-      release_date: '2023-03-22',
-      memory_gb: 80,
-      tdp_watts: 700,
-      process_node: '4nm',
+      id: 'dc-1',
+      name: 'US West GPU Cluster',
+      region: 'us-west-2',
+      status: 'active',
+      power_mw: 320,
+      owner_company: { id: 'co-1', name: 'Amazon' },
       notes: null,
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
     },
     {
-      id: 'uuid-2',
-      name: 'A100',
-      vendor: 'NVIDIA',
-      category: 'GPU',
-      release_date: '2020-05-14',
-      memory_gb: 80,
-      tdp_watts: 400,
-      process_node: '7nm',
+      id: 'dc-2',
+      name: 'EU AI Datacenter',
+      region: 'eu-west-1',
+      status: 'planned',
+      power_mw: 150,
+      owner_company: null,
       notes: null,
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
@@ -53,11 +49,7 @@ function makeWrapper(mockJson: unknown) {
       })
     )
   )
-
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={qc}>
@@ -67,11 +59,11 @@ function makeWrapper(mockJson: unknown) {
   }
 }
 
-describe('HardwareProductList', () => {
+describe('DatacenterList', () => {
   beforeEach(() => {
     vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
       user: null,
-      accessToken: 'fake-test-token',
+      accessToken: 'fake-token',
       isLoading: false,
       error: null,
       login: vi.fn(),
@@ -80,44 +72,42 @@ describe('HardwareProductList', () => {
     })
   })
 
-  it('renders table with column headers and rows', async () => {
+  it('renders table with datacenter names', async () => {
     const Wrapper = makeWrapper(MOCK_RESPONSE)
-    render(<HardwareProductList />, { wrapper: Wrapper })
+    render(<DatacenterList />, { wrapper: Wrapper })
 
     await waitFor(() => {
-      expect(screen.getByText('H100')).toBeInTheDocument()
-      expect(screen.getByText('A100')).toBeInTheDocument()
+      expect(screen.getByText('US West GPU Cluster')).toBeInTheDocument()
+      expect(screen.getByText('EU AI Datacenter')).toBeInTheDocument()
     })
-
     expect(screen.getByText('Name')).toBeInTheDocument()
-    expect(screen.getByText('Vendor')).toBeInTheDocument()
-    expect(screen.getByText('Category')).toBeInTheDocument()
   })
 
-  it('renders pagination controls with correct text', async () => {
+  it('shows status badge', async () => {
     const Wrapper = makeWrapper(MOCK_RESPONSE)
-    render(<HardwareProductList />, { wrapper: Wrapper })
+    render(<DatacenterList />, { wrapper: Wrapper })
 
     await waitFor(() => {
-      expect(screen.getByText(/Showing 1–2 of 2/)).toBeInTheDocument()
+      expect(screen.getByText('active')).toBeInTheDocument()
+      expect(screen.getByText('planned')).toBeInTheDocument()
     })
   })
 
-  it('shows empty state when no items', async () => {
-    const Wrapper = makeWrapper(EMPTY_RESPONSE)
-    render(<HardwareProductList />, { wrapper: Wrapper })
+  it('shows owner company name', async () => {
+    const Wrapper = makeWrapper(MOCK_RESPONSE)
+    render(<DatacenterList />, { wrapper: Wrapper })
 
     await waitFor(() => {
-      expect(screen.getByText('No hardware products found.')).toBeInTheDocument()
+      expect(screen.getByText('Amazon')).toBeInTheDocument()
     })
   })
 
-  it('shows "No results" in pagination when empty', async () => {
+  it('shows empty state when no datacenters', async () => {
     const Wrapper = makeWrapper(EMPTY_RESPONSE)
-    render(<HardwareProductList />, { wrapper: Wrapper })
+    render(<DatacenterList />, { wrapper: Wrapper })
 
     await waitFor(() => {
-      expect(screen.getByText('No results')).toBeInTheDocument()
+      expect(screen.getByText('No datacenter sites found.')).toBeInTheDocument()
     })
   })
 
@@ -128,7 +118,7 @@ describe('HardwareProductList', () => {
         Promise.resolve({
           ok: false,
           status: 500,
-          json: () => Promise.resolve({ error: { code: 'SERVER_ERROR', message: 'Server error' } }),
+          json: () => Promise.resolve({ error: { code: 'SERVER_ERROR', message: 'fail' } }),
         })
       )
     )
@@ -138,11 +128,11 @@ describe('HardwareProductList', () => {
         <MemoryRouter>{children}</MemoryRouter>
       </QueryClientProvider>
     )
-    render(<HardwareProductList />, { wrapper: Wrapper })
+    render(<DatacenterList />, { wrapper: Wrapper })
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeInTheDocument()
-      expect(screen.getByText('Failed to load hardware products.')).toBeInTheDocument()
+      expect(screen.getByText('Failed to load datacenter sites.')).toBeInTheDocument()
     })
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
   })

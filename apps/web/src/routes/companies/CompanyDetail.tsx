@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import LoadingSkeleton from '../../components/LoadingSkeleton'
+import ErrorState from '../../components/ErrorState'
 import { useCompany } from '../../hooks/useCompanies'
 
 export default function CompanyDetail() {
@@ -7,7 +8,7 @@ export default function CompanyDetail() {
   const { data, isLoading, isError } = useCompany(id!)
 
   if (isLoading) return <LoadingSkeleton rows={4} cols={2} />
-  if (isError || !data) return <p className="text-sm text-red-600">Company not found.</p>
+  if (isError || !data) return <ErrorState message="Company not found." />
 
   return (
     <div className="max-w-2xl">

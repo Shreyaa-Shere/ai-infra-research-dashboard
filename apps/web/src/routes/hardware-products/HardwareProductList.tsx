@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DataTable, { type Column } from '../../components/DataTable'
 import EmptyState from '../../components/EmptyState'
+import ErrorState from '../../components/ErrorState'
 import LoadingSkeleton from '../../components/LoadingSkeleton'
 import PaginationControls from '../../components/PaginationControls'
 import { useHardwareProducts } from '../../hooks/useHardwareProducts'
@@ -36,7 +37,7 @@ const columns: Column<HardwareProduct>[] = [
 export default function HardwareProductList() {
   const [offset, setOffset] = useState(0)
   const navigate = useNavigate()
-  const { data, isLoading, isError } = useHardwareProducts({ limit: LIMIT, offset })
+  const { data, isLoading, isError, refetch } = useHardwareProducts({ limit: LIMIT, offset })
 
   return (
     <div>
@@ -44,9 +45,7 @@ export default function HardwareProductList() {
 
       {isLoading && <LoadingSkeleton rows={5} cols={5} />}
 
-      {isError && (
-        <p className="text-sm text-red-600">Failed to load hardware products.</p>
-      )}
+      {isError && <ErrorState message="Failed to load hardware products." onRetry={() => void refetch()} />}
 
       {!isLoading && !isError && data && (
         <>

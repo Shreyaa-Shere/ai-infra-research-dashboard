@@ -21,11 +21,19 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Skip-to-content for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded focus:bg-blue-600 focus:px-4 focus:py-2 focus:text-white"
+      >
+        Skip to content
+      </a>
+
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
         <Link to="/dashboard" className="text-lg font-semibold text-gray-900">
           AI Infra Research
         </Link>
-        <nav className="flex gap-4 text-sm text-gray-600">
+        <nav aria-label="Header navigation" className="flex gap-4 text-sm text-gray-600">
           <NavLink
             to="/dashboard"
             className={({ isActive }) =>
@@ -39,7 +47,7 @@ export default function Layout() {
 
       <div className="flex flex-1">
         <aside className="w-56 border-r border-gray-200 bg-gray-50 p-4 shrink-0">
-          <nav className="flex flex-col gap-1 text-sm">
+          <nav aria-label="Sidebar navigation" className="flex flex-col gap-1 text-sm">
             {NAV_LINKS.map(({ to, label }) => (
               <NavLink
                 key={to}
@@ -51,14 +59,20 @@ export default function Layout() {
                       : 'text-gray-600 hover:bg-gray-100'
                   }`
                 }
+                aria-current={undefined}
               >
-                {label}
+                {({ isActive }) => (
+                  <span aria-current={isActive ? 'page' : undefined}>{label}</span>
+                )}
               </NavLink>
             ))}
 
             {isAdmin && (
               <>
-                <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <div
+                  className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider"
+                  aria-hidden="true"
+                >
                   Admin
                 </div>
                 {ADMIN_LINKS.map(({ to, label }) => (
@@ -73,7 +87,9 @@ export default function Layout() {
                       }`
                     }
                   >
-                    {label}
+                    {({ isActive }) => (
+                      <span aria-current={isActive ? 'page' : undefined}>{label}</span>
+                    )}
                   </NavLink>
                 ))}
               </>
@@ -81,7 +97,7 @@ export default function Layout() {
           </nav>
         </aside>
 
-        <main className="flex-1 p-6 bg-white">
+        <main id="main-content" className="flex-1 p-6 bg-white" tabIndex={-1}>
           <Outlet />
         </main>
       </div>

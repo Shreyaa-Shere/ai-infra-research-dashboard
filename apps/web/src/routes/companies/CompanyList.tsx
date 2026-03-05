@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DataTable, { type Column } from '../../components/DataTable'
 import EmptyState from '../../components/EmptyState'
+import ErrorState from '../../components/ErrorState'
 import LoadingSkeleton from '../../components/LoadingSkeleton'
 import PaginationControls from '../../components/PaginationControls'
 import { useCompanies } from '../../hooks/useCompanies'
@@ -54,7 +55,7 @@ const columns: Column<Company>[] = [
 export default function CompanyList() {
   const [offset, setOffset] = useState(0)
   const navigate = useNavigate()
-  const { data, isLoading, isError } = useCompanies({ limit: LIMIT, offset })
+  const { data, isLoading, isError, refetch } = useCompanies({ limit: LIMIT, offset })
 
   return (
     <div>
@@ -62,7 +63,7 @@ export default function CompanyList() {
 
       {isLoading && <LoadingSkeleton rows={5} cols={4} />}
 
-      {isError && <p className="text-sm text-red-600">Failed to load companies.</p>}
+      {isError && <ErrorState message="Failed to load companies." onRetry={() => void refetch()} />}
 
       {!isLoading && !isError && data && (
         <>

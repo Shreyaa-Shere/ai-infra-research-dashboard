@@ -155,4 +155,30 @@ describe('SourceList', () => {
       expect(screen.getByText('file')).toBeInTheDocument()
     })
   })
+
+  it('shows error state when sources fetch fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          status: 500,
+          json: () => Promise.resolve({ error: { code: 'SERVER_ERROR', message: 'fail' } }),
+        })
+      )
+    )
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const Wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>{children}</MemoryRouter>
+      </QueryClientProvider>
+    )
+    render(<SourceList />, { wrapper: Wrapper })
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeInTheDocument()
+      expect(screen.getByText('Failed to load sources.')).toBeInTheDocument()
+    })
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
+  })
 })

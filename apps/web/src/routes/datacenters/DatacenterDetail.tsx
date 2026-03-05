@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import LoadingSkeleton from '../../components/LoadingSkeleton'
+import ErrorState from '../../components/ErrorState'
 import { useDatacenter } from '../../hooks/useDatacenters'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -22,7 +23,7 @@ export default function DatacenterDetail() {
   const { data, isLoading, isError } = useDatacenter(id!)
 
   if (isLoading) return <LoadingSkeleton rows={5} cols={2} />
-  if (isError || !data) return <p className="text-sm text-red-600">Datacenter site not found.</p>
+  if (isError || !data) return <ErrorState message="Datacenter site not found." />
 
   return (
     <div className="max-w-2xl">

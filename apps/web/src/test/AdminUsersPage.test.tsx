@@ -100,6 +100,19 @@ describe('UsersPage', () => {
     expect(screen.getByTestId('invite-email-input')).toBeInTheDocument()
   })
 
+  it('shows error state when users fetch fails', async () => {
+    mockAdmin()
+    vi.mocked(usersApi.list).mockRejectedValue(new Error('Network error'))
+
+    render(<UsersPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeInTheDocument()
+      expect(screen.getByText('Failed to load users.')).toBeInTheDocument()
+    })
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
+  })
+
   it('shows invite URL after successful invite', async () => {
     mockAdmin()
     vi.mocked(usersApi.list).mockResolvedValue(MOCK_PAGINATED)

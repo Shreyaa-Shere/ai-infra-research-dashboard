@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../store/AuthContext'
 import { usersApi, ApiError } from '../../lib/api'
+import ErrorState from '../../components/ErrorState'
 import type { UserAdminOut, Role } from '../../lib/entities'
 
 const ROLES: Array<'analyst' | 'viewer'> = ['analyst', 'viewer']
@@ -21,7 +22,7 @@ export default function UsersPage() {
   const [inviteError, setInviteError] = useState<string | null>(null)
 
   // ── data ──────────────────────────────────────────────────────────────────
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['users', limit, offset],
     queryFn: () => usersApi.list(accessToken!, { limit, offset }),
     enabled: !!accessToken,
@@ -82,7 +83,7 @@ export default function UsersPage() {
       {isLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : error ? (
-        <p className="text-sm text-red-600">Failed to load users.</p>
+        <ErrorState message="Failed to load users." onRetry={() => void refetch()} />
       ) : (
         <>
           <div className="overflow-x-auto rounded-lg border border-gray-200">

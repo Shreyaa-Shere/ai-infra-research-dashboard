@@ -4,33 +4,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import * as AuthModule from '../store/AuthContext'
-import HardwareProductList from '../routes/hardware-products/HardwareProductList'
+import CompanyList from '../routes/companies/CompanyList'
 
 const MOCK_RESPONSE = {
   items: [
     {
-      id: 'uuid-1',
-      name: 'H100',
-      vendor: 'NVIDIA',
-      category: 'GPU',
-      release_date: '2023-03-22',
-      memory_gb: 80,
-      tdp_watts: 700,
-      process_node: '4nm',
-      notes: null,
+      id: 'co-1',
+      name: 'NVIDIA',
+      type: 'vendor',
+      region: 'US',
+      website: 'https://nvidia.com',
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
     },
     {
-      id: 'uuid-2',
-      name: 'A100',
-      vendor: 'NVIDIA',
-      category: 'GPU',
-      release_date: '2020-05-14',
-      memory_gb: 80,
-      tdp_watts: 400,
-      process_node: '7nm',
-      notes: null,
+      id: 'co-2',
+      name: 'TSMC',
+      type: 'fab',
+      region: 'TW',
+      website: null,
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
     },
@@ -53,11 +45,7 @@ function makeWrapper(mockJson: unknown) {
       })
     )
   )
-
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={qc}>
@@ -67,11 +55,11 @@ function makeWrapper(mockJson: unknown) {
   }
 }
 
-describe('HardwareProductList', () => {
+describe('CompanyList', () => {
   beforeEach(() => {
     vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
       user: null,
-      accessToken: 'fake-test-token',
+      accessToken: 'fake-token',
       isLoading: false,
       error: null,
       login: vi.fn(),
@@ -80,44 +68,33 @@ describe('HardwareProductList', () => {
     })
   })
 
-  it('renders table with column headers and rows', async () => {
+  it('renders table with company names', async () => {
     const Wrapper = makeWrapper(MOCK_RESPONSE)
-    render(<HardwareProductList />, { wrapper: Wrapper })
+    render(<CompanyList />, { wrapper: Wrapper })
 
     await waitFor(() => {
-      expect(screen.getByText('H100')).toBeInTheDocument()
-      expect(screen.getByText('A100')).toBeInTheDocument()
+      expect(screen.getByText('NVIDIA')).toBeInTheDocument()
+      expect(screen.getByText('TSMC')).toBeInTheDocument()
     })
-
     expect(screen.getByText('Name')).toBeInTheDocument()
-    expect(screen.getByText('Vendor')).toBeInTheDocument()
-    expect(screen.getByText('Category')).toBeInTheDocument()
   })
 
-  it('renders pagination controls with correct text', async () => {
+  it('shows type badge', async () => {
     const Wrapper = makeWrapper(MOCK_RESPONSE)
-    render(<HardwareProductList />, { wrapper: Wrapper })
+    render(<CompanyList />, { wrapper: Wrapper })
 
     await waitFor(() => {
-      expect(screen.getByText(/Showing 1–2 of 2/)).toBeInTheDocument()
+      expect(screen.getByText('vendor')).toBeInTheDocument()
+      expect(screen.getByText('fab')).toBeInTheDocument()
     })
   })
 
-  it('shows empty state when no items', async () => {
+  it('shows empty state when no companies', async () => {
     const Wrapper = makeWrapper(EMPTY_RESPONSE)
-    render(<HardwareProductList />, { wrapper: Wrapper })
+    render(<CompanyList />, { wrapper: Wrapper })
 
     await waitFor(() => {
-      expect(screen.getByText('No hardware products found.')).toBeInTheDocument()
-    })
-  })
-
-  it('shows "No results" in pagination when empty', async () => {
-    const Wrapper = makeWrapper(EMPTY_RESPONSE)
-    render(<HardwareProductList />, { wrapper: Wrapper })
-
-    await waitFor(() => {
-      expect(screen.getByText('No results')).toBeInTheDocument()
+      expect(screen.getByText('No companies found.')).toBeInTheDocument()
     })
   })
 
@@ -128,7 +105,7 @@ describe('HardwareProductList', () => {
         Promise.resolve({
           ok: false,
           status: 500,
-          json: () => Promise.resolve({ error: { code: 'SERVER_ERROR', message: 'Server error' } }),
+          json: () => Promise.resolve({ error: { code: 'SERVER_ERROR', message: 'fail' } }),
         })
       )
     )
@@ -138,11 +115,11 @@ describe('HardwareProductList', () => {
         <MemoryRouter>{children}</MemoryRouter>
       </QueryClientProvider>
     )
-    render(<HardwareProductList />, { wrapper: Wrapper })
+    render(<CompanyList />, { wrapper: Wrapper })
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeInTheDocument()
-      expect(screen.getByText('Failed to load hardware products.')).toBeInTheDocument()
+      expect(screen.getByText('Failed to load companies.')).toBeInTheDocument()
     })
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
   })

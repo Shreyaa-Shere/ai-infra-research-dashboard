@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DataTable, { type Column } from '../../components/DataTable'
 import EmptyState from '../../components/EmptyState'
+import ErrorState from '../../components/ErrorState'
 import LoadingSkeleton from '../../components/LoadingSkeleton'
 import PaginationControls from '../../components/PaginationControls'
 import { useSources, useTriggerIngestion, useIngestionRuns } from '../../hooks/useSources'
@@ -41,7 +42,7 @@ export default function SourceList() {
 
   const canTrigger = user?.role === 'admin' || user?.role === 'analyst'
 
-  const { data, isLoading, isError } = useSources({
+  const { data, isLoading, isError, refetch } = useSources({
     limit: LIMIT,
     offset,
     source_type: sourceType || undefined,
@@ -246,7 +247,7 @@ export default function SourceList() {
       {isLoading && <LoadingSkeleton rows={5} cols={6} />}
 
       {isError && (
-        <p className="text-sm text-red-600">Failed to load sources.</p>
+        <ErrorState message="Failed to load sources." onRetry={() => void refetch()} />
       )}
 
       {!isLoading && !isError && data && (

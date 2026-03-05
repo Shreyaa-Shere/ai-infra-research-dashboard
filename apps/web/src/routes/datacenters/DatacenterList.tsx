@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DataTable, { type Column } from '../../components/DataTable'
 import EmptyState from '../../components/EmptyState'
+import ErrorState from '../../components/ErrorState'
 import LoadingSkeleton from '../../components/LoadingSkeleton'
 import PaginationControls from '../../components/PaginationControls'
 import { useDatacenters } from '../../hooks/useDatacenters'
@@ -44,7 +45,7 @@ const columns: Column<DatacenterSite>[] = [
 export default function DatacenterList() {
   const [offset, setOffset] = useState(0)
   const navigate = useNavigate()
-  const { data, isLoading, isError } = useDatacenters({ limit: LIMIT, offset })
+  const { data, isLoading, isError, refetch } = useDatacenters({ limit: LIMIT, offset })
 
   return (
     <div>
@@ -52,7 +53,7 @@ export default function DatacenterList() {
 
       {isLoading && <LoadingSkeleton rows={5} cols={5} />}
 
-      {isError && <p className="text-sm text-red-600">Failed to load datacenter sites.</p>}
+      {isError && <ErrorState message="Failed to load datacenter sites." onRetry={() => void refetch()} />}
 
       {!isLoading && !isError && data && (
         <>

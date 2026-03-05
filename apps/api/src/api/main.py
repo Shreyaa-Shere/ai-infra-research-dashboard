@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -20,6 +21,7 @@ from api.routes import hardware_products as hardware_products_router
 from api.routes import health, version
 from api.routes import notes as notes_router
 from api.routes import published as published_router
+from api.routes import system as system_router
 from api.routes import users as users_router
 from api.routes.ingestion import router as ingestion_router
 from api.routes.metrics import overview_router as metrics_overview_router
@@ -27,6 +29,8 @@ from api.routes.metrics import router as metrics_router
 from api.routes.search import router as search_router
 from api.routes.sources import router as sources_router
 from api.settings import settings
+
+logger = logging.getLogger(__name__)
 
 setup_logging()
 
@@ -65,14 +69,24 @@ app.add_middleware(RequestIdMiddleware)
 
 
 # ── Error handlers ────────────────────────────────────────────────────────────
+def _request_id(request: Request) -> str:
+    return getattr(request.state, "request_id", "")
+
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     detail = exc.detail
     if isinstance(detail, dict) and "error" in detail:
         content = detail
+        # Inject request_id into existing error details
+        content["error"].setdefault("details", {})["request_id"] = _request_id(request)
     else:
         content = {
-            "error": {"code": "HTTP_ERROR", "message": str(detail), "details": {}}
+            "error": {
+                "code": "HTTP_ERROR",
+                "message": str(detail),
+                "details": {"request_id": _request_id(request)},
+            }
         }
     return JSONResponse(status_code=exc.status_code, content=content)
 
@@ -102,7 +116,28 @@ async def validation_exception_handler(
             "error": {
                 "code": "VALIDATION_ERROR",
                 "message": "Request validation failed",
-                "details": {"errors": _safe_errors(exc.errors())},
+                "details": {
+                    "errors": _safe_errors(exc.errors()),
+                    "request_id": _request_id(request),
+                },
+            }
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception(
+        "Unhandled exception",
+        extra={"request_id": _request_id(request)},
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": {
+                "code": "internal_error",
+                "message": "An unexpected error occurred",
+                "details": {"request_id": _request_id(request)},
             }
         },
     )
@@ -124,3 +159,4 @@ app.include_router(metrics_overview_router, prefix="/api/v1")
 app.include_router(ingestion_router, prefix="/api/v1")
 app.include_router(sources_router, prefix="/api/v1")
 app.include_router(search_router, prefix="/api/v1")
+app.include_router(system_router.router, prefix="/api/v1")

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DataTable, { type Column } from '../../components/DataTable'
 import EmptyState from '../../components/EmptyState'
+import ErrorState from '../../components/ErrorState'
 import LoadingSkeleton from '../../components/LoadingSkeleton'
 import PaginationControls from '../../components/PaginationControls'
 import { useNotes } from '../../hooks/useNotes'
@@ -33,7 +34,7 @@ export default function NoteList() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
-  const { data, isLoading, isError } = useNotes({
+  const { data, isLoading, isError, refetch } = useNotes({
     limit: LIMIT,
     offset,
     status: status || undefined,
@@ -177,9 +178,7 @@ export default function NoteList() {
 
       {isLoading && <LoadingSkeleton rows={5} cols={5} />}
 
-      {isError && (
-        <p className="text-sm text-red-600">Failed to load research notes.</p>
-      )}
+      {isError && <ErrorState message="Failed to load research notes." onRetry={() => void refetch()} />}
 
       {!isLoading && !isError && data && (
         <>

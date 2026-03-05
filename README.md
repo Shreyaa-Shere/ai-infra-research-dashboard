@@ -363,6 +363,33 @@ cd apps/web && npx playwright test --ui
 
 See [docs/DECISIONS.md](docs/DECISIONS.md) for architecture decision records.
 
+## UX Polish + Accessibility (Slice 8)
+
+Slice 8 brings the app to demo-ready and production-ready quality.
+
+### What's included
+
+- **Global error handling** — all API errors return `{"error": {"code": "...", "message": "...", "details": {"request_id": "..."}}}`. Every response also carries `X-Request-Id` for tracing.
+- **System info endpoint** — `GET /api/v1/system/info` (admin only) returns version, environment, uptime, and health of DB + Redis.
+- **React ErrorBoundary** — wraps the entire app; catches unexpected render crashes and shows a friendly reload prompt.
+- **Consistent error/loading/empty states** — all list and detail pages use shared `ErrorState`, `LoadingSkeleton`, and `EmptyState` components with retry buttons.
+- **Accessibility** — skip-to-content link, `aria-current="page"` on active nav items, `aria-label` on nav landmarks, `role="alert"` on error states, `id="main-content"` target.
+- **Playwright trace recording** — in CI, traces are retained on failure (`retain-on-failure`).
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Blank page after login | Check browser console for JS errors; check `X-Request-Id` in failed API calls and search `make logs` |
+| `401 Unauthorized` on every request | JWT secret mismatch — ensure `.env` `JWT_SECRET` matches what was used at token mint time; restart `make dev` |
+| `CORS` errors in browser | Add the frontend origin to `CORS_ORIGINS` in `.env`, then restart the `api` container |
+| DB migration errors on startup | Run `make migrate` manually; check `make logs api` for Alembic errors |
+| Celery worker not picking up jobs | Ensure Redis is healthy (`make logs redis`); confirm `REDIS_URL` is correct |
+| `Cannot connect to Docker daemon` | Start Docker Desktop first |
+| Ingestion runs but no documents appear | Check `INGEST_DIR` path inside the container; ensure JSON files are valid arrays of objects |
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for production deployment notes.
+
 ## Where to Put Future Modules
 
 | Concern | Location |

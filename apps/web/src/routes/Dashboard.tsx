@@ -12,6 +12,7 @@ import {
 
 import { useMetricsOverview } from '../hooks/useMetrics'
 import { useAuth } from '../store/AuthContext'
+import ErrorState from '../components/ErrorState'
 import type { ChartSeries, KPIBlock } from '../lib/entities'
 
 const ROLE_BADGE: Record<string, string> = {
@@ -110,7 +111,7 @@ function MetricChart({ series, index }: { series: ChartSeries; index: number }) 
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
-  const { data: overview, isLoading, error } = useMetricsOverview()
+  const { data: overview, isLoading, error, refetch } = useMetricsOverview()
 
   return (
     <div>
@@ -153,9 +154,7 @@ export default function Dashboard() {
           ))}
         </div>
       ) : error ? (
-        <div className="mb-8 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          Failed to load metrics. Please try refreshing.
-        </div>
+        <ErrorState message="Failed to load metrics." onRetry={() => void refetch()} />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
           {overview?.kpis.map((kpi) => (
