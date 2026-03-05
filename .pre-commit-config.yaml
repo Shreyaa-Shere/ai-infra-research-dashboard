@@ -1,0 +1,42 @@
+repos:
+  # ── Python (ruff lint + format) ────────────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^apps/api/
+      - id: ruff-format
+        files: ^apps/api/
+
+  # ── JavaScript / TypeScript ────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        language: system
+        entry: bash -c 'cd apps/web && npx eslint --max-warnings 0 src'
+        types: [file]
+        files: ^apps/web/src/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: prettier
+        name: Prettier
+        language: system
+        entry: bash -c 'cd apps/web && npx prettier --check src'
+        types: [file]
+        files: ^apps/web/src/.*\.(ts|tsx|css)$
+        pass_filenames: false
+
+  # ── General ────────────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^apps/web/src/test/
+      - id: end-of-file-fixer
+        exclude: ^apps/web/src/test/
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-json
+        exclude: tsconfig.*\.json$

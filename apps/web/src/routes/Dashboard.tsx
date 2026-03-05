@@ -26,7 +26,7 @@ const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'
 
 function KPICard({ kpi }: { kpi: KPIBlock }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+    <div data-testid="kpi-card" className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide truncate">
         {kpi.label}
       </p>

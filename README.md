@@ -37,6 +37,7 @@ make seed                   # creates the default admin user
 | `make makemigrations MSG="..."` | Create new Alembic revision |
 | `make seed` | Create default admin user (idempotent) |
 | `make ingest` | Run a one-shot ingestion from `data/ingest/` |
+| `make e2e` | Run Playwright end-to-end tests (requires `make dev` running) |
 
 > `make lint`, `make test`, `make migrate`, `make seed` require `make dev` to be running first.
 
@@ -296,6 +297,72 @@ Slice 6 adds a full-text search experience across ResearchNotes and SourceDocume
 
 See [docs/SEARCH.md](docs/SEARCH.md) for full documentation.
 
+## Admin User Management (Slice 7)
+
+Slice 7 adds admin-only user management, a token-based invite flow, security headers, CI, and Playwright e2e tests.
+
+### Pages
+
+| URL | Auth | Description |
+|---|---|---|
+| `/admin/users` | admin only | User table — role dropdown, activate/deactivate, invite modal |
+| `/accept-invite?token=...` | public | Set password and create account from invite link |
+
+### Invite Flow
+
+```bash
+# 1. Admin creates an invite (returns one-time URL)
+TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@example.com","password":"changeme123!"}' | jq -r .access_token)
+
+curl -s -X POST http://localhost:8000/api/v1/users/invite \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"colleague@example.com","role":"analyst"}' | jq .invite_url
+
+# 2. Invitee opens the URL in a browser and sets their password
+#    http://localhost:5173/accept-invite?token=<raw-token>
+```
+
+### REST API
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/users/invite` | admin | Create invite, returns one-time URL |
+| `POST` | `/api/v1/users/accept-invite` | public | Accept invite, creates user account |
+| `GET` | `/api/v1/users` | admin | List all users (paginated) |
+| `PATCH` | `/api/v1/users/{id}` | admin | Change role or deactivate/reactivate |
+
+### Security Headers
+
+Every response now includes:
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+
+### CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR to `main`:
+
+| Job | What it does |
+|---|---|
+| `backend` | ruff lint + format check + pytest against real Postgres |
+| `frontend` | ESLint + Vitest |
+| `e2e` | Playwright happy-path against full docker-compose stack |
+
+### Playwright E2E
+
+```bash
+# Requires make dev + make migrate + make seed to be running
+make e2e
+
+# Or with UI mode
+cd apps/web && npx playwright test --ui
+```
+
+See [docs/DECISIONS.md](docs/DECISIONS.md) for architecture decision records.
+
 ## Where to Put Future Modules
 
 | Concern | Location |
@@ -310,3 +377,4 @@ See [docs/SEARCH.md](docs/SEARCH.md) for full documentation.
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system overview
 - [docs/AUTH.md](docs/AUTH.md) — token strategy & RBAC
+- [docs/DECISIONS.md](docs/DECISIONS.md) — architecture decision records

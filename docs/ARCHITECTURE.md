@@ -169,7 +169,52 @@ GET /api/v1/search?q=...
 
 **Cache invalidation:** `search:*` is invalidated on note create/update/delete/publish and after every successful ingestion run.
 
-## Future Slices
+## User Invite Flow (Slice 7)
+
+```
+Admin
+  │
+  ├── POST /api/v1/users/invite  (admin only)
+  │     ├── validate email not already registered
+  │     ├── generate secrets.token_urlsafe(32)
+  │     ├── store sha256(token) → user_invites.token_hash
+  │     └── return { invite_url: FRONTEND_BASE_URL/accept-invite?token=<raw> }
+  │
+  └── Invitee visits /accept-invite?token=<raw>
+        ├── POST /api/v1/users/accept-invite
+        │     ├── sha256(raw) → lookup user_invites by token_hash
+        │     ├── validate not used, not expired
+        │     ├── create User with invite.role
+        │     └── mark invite.used_at = now()
+        └── redirect → /login
+```
+
+**UserInvite model** (`user_invites` table, migration `g6b7c8d9e0f1`):
+```
+UserInvite
+  id, email, role, token_hash (UNIQUE), expires_at, used_at, created_at
+  created_by_user_id FK → users (SET NULL)
+```
+
+## Security Headers (Slice 7)
+
+`SecurityHeadersMiddleware` (pure ASGI, `middleware.py`) injects on every response:
+
+| Header | Value |
+|---|---|
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+
+CORS origins are configurable via `CORS_ORIGINS` env var (comma-separated).
+
+## CI / Tooling (Slice 7)
+
+- **Pre-commit:** `.pre-commit-config.yaml` — ruff lint+format, ESLint, Prettier, trailing-whitespace
+- **GitHub Actions:** `.github/workflows/ci.yml` — backend (postgres service + ruff + pytest), frontend (ESLint + Vitest), e2e (Playwright against docker-compose stack)
+- **Playwright:** `apps/web/e2e/happy-path.spec.ts` — login, dashboard, search, admin user management, RBAC, accept-invite
+
+## Completed Slices
 
 1. **Slice 1 — Auth**: JWT-based login, protected routes, user model ✓
 2. **Slice 2 — Core domain entities**: HardwareProduct, Company, DatacenterSite, CRUD APIs, list/detail UI ✓
@@ -177,3 +222,4 @@ GET /api/v1/search?q=...
 4. **Slice 4 — MetricsSeries + MetricPoints + Dashboard Aggregates + Charts** ✓
 5. **Slice 5 — Ingestion Pipeline**: SourceDocument + SourceEntityLink + IngestionRun + Celery workers + Sources UI ✓
 6. **Slice 6 — Unified Search**: PostgreSQL FTS + GIN indexes + search endpoint + search UI ✓
+7. **Slice 7 — Admin User Management + Security + CI**: Invite flow, RBAC, security headers, pre-commit, GitHub Actions, Playwright e2e ✓
