@@ -161,19 +161,21 @@ export default function NoteList() {
             className="w-52 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <button
-          type="submit"
-          className="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white hover:bg-gray-900"
-        >
-          Search
-        </button>
-        <button
-          type="button"
-          onClick={handleReset}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
-        >
-          Reset
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            className="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white hover:bg-gray-900"
+          >
+            Search
+          </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+          >
+            Reset
+          </button>
+        </div>
       </form>
 
       {isLoading && <LoadingSkeleton rows={5} cols={5} />}
