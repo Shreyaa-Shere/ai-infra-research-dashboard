@@ -323,7 +323,8 @@ async def test_audit_meta_json_has_title_on_update(
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     updated_entries = [
-        e for e in audit.json()["items"]
+        e
+        for e in audit.json()["items"]
         if e["action"] == "note.updated" and e["entity_id"] == note_id
     ]
     assert len(updated_entries) > 0, "Expected at least one note.updated audit entry"
@@ -361,10 +362,13 @@ async def test_audit_meta_json_has_title_on_publish(
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     published_entries = [
-        e for e in audit.json()["items"]
+        e
+        for e in audit.json()["items"]
         if e["action"] == "note.published" and e["entity_id"] == note_id
     ]
-    assert len(published_entries) > 0, "Expected at least one note.published audit entry"
+    assert len(published_entries) > 0, (
+        "Expected at least one note.published audit entry"
+    )
     meta = _json.loads(published_entries[0]["meta_json"])
     assert meta.get("title") == "Publish Meta Test"
 
@@ -399,7 +403,8 @@ async def test_audit_meta_json_has_title_on_delete(
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     deleted_entries = [
-        e for e in audit.json()["items"]
+        e
+        for e in audit.json()["items"]
         if e["action"] == "note.deleted" and e["entity_id"] == note_id
     ]
     assert len(deleted_entries) > 0, "Expected at least one note.deleted audit entry"
