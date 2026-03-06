@@ -26,7 +26,7 @@ const MOCK_USERS = [
   {
     id: 'user-1',
     email: 'admin@example.com',
-    role: 'admin',
+    role: 'admin' as const,
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -34,7 +34,7 @@ const MOCK_USERS = [
   {
     id: 'user-2',
     email: 'analyst@example.com',
-    role: 'analyst',
+    role: 'analyst' as const,
     is_active: true,
     created_at: '2024-01-02T00:00:00Z',
     updated_at: '2024-01-02T00:00:00Z',

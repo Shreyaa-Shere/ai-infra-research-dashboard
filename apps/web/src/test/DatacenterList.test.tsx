@@ -67,7 +67,7 @@ function mockAuth(role: 'admin' | 'analyst' | 'viewer') {
 }
 
 describe('DatacenterList', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('renders datacenter names and regions', async () => {
     mockAuth('viewer')

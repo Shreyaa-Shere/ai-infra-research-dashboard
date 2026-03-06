@@ -81,7 +81,7 @@ function mockAuth(role: 'admin' | 'analyst' | 'viewer') {
 }
 
 describe('MetricSeriesDetail', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('renders series name, unit, frequency and source', async () => {
     mockAuth('viewer')

@@ -66,7 +66,7 @@ function makeWrapper(role: 'admin' | 'analyst', userId = 'analyst-1') {
 }
 
 describe('NoteEditor', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('shows "Submit for Review" button for analyst on a draft note', async () => {
     vi.mocked(notesApi.get).mockResolvedValue(DRAFT_NOTE)
