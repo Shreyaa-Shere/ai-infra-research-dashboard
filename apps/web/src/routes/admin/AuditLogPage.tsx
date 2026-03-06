@@ -10,10 +10,17 @@ import type { AuditLogEntry } from '../../lib/entities'
 const LIMIT = 25
 
 const ACTION_COLORS: Record<string, string> = {
+  // Note actions
   'note.created': 'bg-blue-100 text-blue-700',
   'note.updated': 'bg-yellow-100 text-yellow-700',
   'note.published': 'bg-green-100 text-green-700',
   'note.deleted': 'bg-red-100 text-red-700',
+  // User actions
+  'user.invited': 'bg-purple-100 text-purple-700',
+  'user.invite_accepted': 'bg-teal-100 text-teal-700',
+  'user.role_changed': 'bg-orange-100 text-orange-700',
+  'user.deactivated': 'bg-red-100 text-red-600',
+  'user.activated': 'bg-green-100 text-green-700',
 }
 
 const ENTITY_ROUTES: Record<string, string> = {
@@ -23,11 +30,14 @@ const ENTITY_ROUTES: Record<string, string> = {
   datacenter: '/datacenters',
 }
 
-function parseMetaTitle(entry: AuditLogEntry): string | null {
+function parseMetaLabel(entry: AuditLogEntry): string | null {
   if (!entry.meta_json) return null
   try {
     const meta = JSON.parse(entry.meta_json) as Record<string, unknown>
+    // Note entries store title
     if (typeof meta.title === 'string') return meta.title
+    // User entries store email
+    if (typeof meta.email === 'string') return meta.email
     if (typeof meta.name === 'string') return meta.name
   } catch {
     // ignore parse errors
@@ -37,8 +47,9 @@ function parseMetaTitle(entry: AuditLogEntry): string | null {
 
 function EntityLink({ entry }: { entry: AuditLogEntry }) {
   const route = ENTITY_ROUTES[entry.entity_type]
-  const label = parseMetaTitle(entry) ?? entry.entity_id?.slice(0, 8) ?? '—'
-  if (route && entry.entity_id && !entry.action.includes('deleted')) {
+  const label = parseMetaLabel(entry) ?? entry.entity_id?.slice(0, 8) ?? '—'
+  // Deleted entities can't be linked (they no longer exist)
+  if (route && entry.entity_id && !entry.action.endsWith('.deleted')) {
     return (
       <Link
         to={`${route}/${entry.entity_id}`}
@@ -48,7 +59,11 @@ function EntityLink({ entry }: { entry: AuditLogEntry }) {
       </Link>
     )
   }
-  return <span className="text-sm text-gray-700">{label}</span>
+  return (
+    <span className={`text-sm font-medium ${entry.action.endsWith('.deleted') ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+      {label}
+    </span>
+  )
 }
 
 export default function AuditLogPage() {
@@ -133,10 +148,17 @@ export default function AuditLogPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {entry.actor_user_id
-                          ? entry.actor_user_id.slice(0, 8) + '…'
-                          : 'system'}
+                      <td className="px-4 py-3">
+                        {entry.actor_user_id ? (
+                          <span
+                            className="inline-block rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-600"
+                            title={entry.actor_user_id}
+                          >
+                            {entry.actor_user_id.slice(0, 8)}…
+                          </span>
+                        ) : (
+                          <span className="text-xs italic text-gray-400">system</span>
+                        )}
                       </td>
                     </tr>
                   ))

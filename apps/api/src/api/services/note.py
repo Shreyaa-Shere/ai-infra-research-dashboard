@@ -338,7 +338,7 @@ class NoteService:
             action="note.updated",
             entity_type="research_note",
             entity_id=str(note.id),
-            meta_json=json.dumps({"fields": list(fields.keys())}),
+            meta_json=json.dumps({"title": note.title, "fields": list(fields.keys())}),
         )
         await session.commit()
 
@@ -359,6 +359,7 @@ class NoteService:
         _check_can_edit(note, current_user)
 
         slug = note.slug
+        note_title = note.title
         await _repo.delete(session, note)
 
         await _audit.append(
@@ -367,6 +368,7 @@ class NoteService:
             action="note.deleted",
             entity_type="research_note",
             entity_id=str(note_id),
+            meta_json=json.dumps({"title": note_title}),
         )
         await session.commit()
         await _bust_caches(note_id, slug)
@@ -415,7 +417,7 @@ class NoteService:
             action="note.published",
             entity_type="research_note",
             entity_id=str(note.id),
-            meta_json=json.dumps({"slug": slug}),
+            meta_json=json.dumps({"title": note.title, "slug": slug}),
         )
         await session.commit()
 
