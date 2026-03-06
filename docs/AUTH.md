@@ -61,11 +61,39 @@ Exceeding the limit returns HTTP 429.
 - [ ] Add refresh token absolute expiry + sliding window rotation
 - [ ] Consider adding `jti` claim to access tokens for revocation support
 
+## Password Reset Flow
+
+```
+POST /api/v1/auth/forgot-password  { email }
+  → always returns 204 (no user-enumeration)
+  → if account exists and is active: creates reset token, sends email
+
+  User clicks link in email → /reset-password?token=<raw>
+     ↓
+POST /api/v1/auth/reset-password  { token, new_password }
+  → validates token (exists, not used, not expired)
+  → updates password hash
+  → marks token used
+  → revokes all existing refresh tokens (forces re-login)
+  → returns 204
+```
+
+**Security notes:**
+- `forgot-password` is rate-limited to 5 requests / minute per IP.
+- The response is always 204 regardless of whether the email is registered (prevents email enumeration).
+- Reset tokens expire after `RESET_TOKEN_TTL_MIN` minutes (default: 60).
+- Reset tokens are single-use; re-using a token returns 400.
+- All active sessions are revoked on successful password reset.
+
+**Email delivery:** Set `SMTP_HOST` in `.env` for real email. If `SMTP_HOST` is empty (default in dev), the reset URL is printed to the API container logs instead.
+
 ## Endpoints
 
-| Method | Path | Auth required | Description |
-|---|---|---|---|
-| POST | `/api/v1/auth/login` | No | Exchange credentials for tokens |
-| POST | `/api/v1/auth/refresh` | No (refresh token) | Rotate refresh token |
-| POST | `/api/v1/auth/logout` | Bearer access token | Revoke refresh token |
-| GET | `/api/v1/me` | Bearer access token | Get current user info |
+| Method | Path | Auth required | Rate limit | Description |
+|---|---|---|---|---|
+| POST | `/api/v1/auth/login` | No | 10/min per IP | Exchange credentials for tokens |
+| POST | `/api/v1/auth/refresh` | No (refresh token) | — | Rotate refresh token |
+| POST | `/api/v1/auth/logout` | Bearer access token | — | Revoke refresh token |
+| GET | `/api/v1/me` | Bearer access token | — | Get current user info |
+| POST | `/api/v1/auth/forgot-password` | No | 5/min per IP | Request password reset email |
+| POST | `/api/v1/auth/reset-password` | No | — | Set new password using reset token |

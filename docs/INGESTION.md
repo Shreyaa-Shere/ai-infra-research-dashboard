@@ -183,13 +183,16 @@ Three sample files are included in `data/ingest/`:
 
 ## Running Ingestion
 
-### Via Makefile
+### Via command line (one-shot, no Celery needed)
 
 ```bash
-# One-shot ingestion run (no Celery needed)
-make ingest
+docker compose -f infra/docker-compose.yml exec api python -c \
+  "import asyncio; from api.workers.tasks import _async_periodic_run; asyncio.run(_async_periodic_run())"
+```
 
-# Or trigger via API (runs async in worker)
+### Via API (queues async Celery task)
+
+```bash
 curl -X POST http://localhost:8000/api/v1/ingestion/run \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -210,7 +213,7 @@ curl -X POST http://localhost:8000/api/v1/ingestion/run \
      }
    ]
    ```
-2. Run `make ingest` or trigger via the API.
+2. Run the ingestion command above or trigger via the API.
    Already-ingested documents (by content hash) are automatically skipped.
 
 ---

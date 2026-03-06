@@ -1,407 +1,154 @@
 # AI Infrastructure Research Dashboard
 
-A monorepo for researching and visualising AI infrastructure data.
+A full-stack internal tool for researching and tracking AI infrastructure — hardware products, companies, datacenters, research notes, metrics, and ingested source documents.
 
-## Prerequisites
+## Stack
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Compose v2)
-- [Make](https://www.gnu.org/software/make/)
+| Layer | Technology |
+|---|---|
+| Backend | FastAPI, SQLAlchemy 2.0 async, Alembic, PostgreSQL, Redis |
+| Frontend | Vite, React 18, TypeScript, TanStack Query v5, Tailwind CSS |
+| Workers | Celery + Celery Beat (ingestion pipeline) |
+| Infrastructure | Docker Compose |
 
 ## Quick Start
 
+### 1. Configure environment
+
 ```bash
-cp .env.example .env        # edit JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
-make dev                    # builds + starts postgres, redis, api, web
-# in another terminal:
-make migrate                # runs alembic upgrade head
-make seed                   # creates the default admin user
+cp .env.example .env
+# Edit .env — at minimum change JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
 ```
 
-| URL | Service |
+### 2. Start all services
+
+```bash
+docker compose -f infra/docker-compose.yml up --build
+```
+
+This starts: `postgres`, `redis`, `api` (FastAPI on :8000), `web` (Vite dev server on :5173), `worker` (Celery), `scheduler` (Celery Beat).
+
+### 3. Run database migrations
+
+```bash
+docker compose -f infra/docker-compose.yml exec api alembic upgrade head
+```
+
+### 4. Seed the database
+
+```bash
+docker compose -f infra/docker-compose.yml exec api python scripts/seed.py
+```
+
+This creates the admin user (from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`), sample entities, metric series, and metric data points.
+
+### 5. Open the app
+
+- Frontend: http://localhost:5173
+- API docs: http://localhost:8000/docs
+
+**Default admin login:** `admin@example.com` / `Adminpass1!` (or whatever you set in `.env`)
+
+---
+
+## Common Commands
+
+| Task | Command |
 |---|---|
-| http://localhost:5173 | Frontend |
-| http://localhost:8000/docs | API Swagger UI |
-| http://localhost:8000/healthz | Health check |
+| Start services | `docker compose -f infra/docker-compose.yml up --build` |
+| Stop services | `docker compose -f infra/docker-compose.yml down` |
+| View logs | `docker compose -f infra/docker-compose.yml logs -f` |
+| Run migrations | `docker compose -f infra/docker-compose.yml exec api alembic upgrade head` |
+| Create migration | `docker compose -f infra/docker-compose.yml exec api alembic revision --autogenerate -m "describe change"` |
+| Seed database | `docker compose -f infra/docker-compose.yml exec api python scripts/seed.py` |
+| Run ingestion | `docker compose -f infra/docker-compose.yml exec api python -c "import asyncio; from api.workers.tasks import _async_periodic_run; asyncio.run(_async_periodic_run())"` |
+| Backend tests | `docker compose -f infra/docker-compose.yml exec api pytest` |
+| Frontend tests | `docker compose -f infra/docker-compose.yml exec web npm run test` |
+| Backend lint | `docker compose -f infra/docker-compose.yml exec api ruff check src tests` |
+| Frontend lint | `docker compose -f infra/docker-compose.yml exec web npm run lint` |
 
-## Commands
+---
 
-| Command | Description |
+## Project Structure
+
+```
+/
+├── apps/
+│   ├── api/                  FastAPI backend (Python 3.11+, src layout)
+│   │   ├── src/api/          Application package
+│   │   │   ├── routes/       HTTP route handlers (RBAC at this layer)
+│   │   │   ├── services/     Business logic + cache invalidation
+│   │   │   ├── repositories/ DB queries only
+│   │   │   ├── models/       SQLAlchemy models
+│   │   │   ├── schemas/      Pydantic v2 DTOs
+│   │   │   └── workers/      Celery app + tasks
+│   │   ├── alembic/          Database migrations
+│   │   ├── tests/            Pytest tests
+│   │   └── scripts/          One-off scripts (seed.py)
+│   └── web/                  Vite + React + TypeScript frontend
+│       └── src/
+│           ├── components/   Shared UI components
+│           ├── routes/       Page-level route components
+│           ├── lib/          API client, query client, Zod schemas
+│           ├── store/        Auth context
+│           └── test/         Vitest unit tests
+├── infra/                    Docker Compose definitions
+├── data/
+│   └── ingest/               Sample JSON files for ingestion pipeline
+├── docs/                     Architecture docs and ADRs
+└── .env.example              Environment variable template
+```
+
+---
+
+## Roles
+
+| Role | Capabilities |
 |---|---|
-| `make dev` | Build and start all services |
-| `make down` | Stop all services |
-| `make logs` | Tail logs |
-| `make lint` | ruff (backend) + ESLint (frontend) |
-| `make format` | ruff formatter + Prettier |
-| `make test` | pytest (backend) + Vitest (frontend) |
-| `make migrate` | Apply pending Alembic migrations |
-| `make makemigrations MSG="..."` | Create new Alembic revision |
-| `make seed` | Create default admin user (idempotent) |
-| `make ingest` | Run a one-shot ingestion from `data/ingest/` |
-| `make e2e` | Run Playwright end-to-end tests (requires `make dev` running) |
+| `admin` | Full access — user management, audit log, all CRUD, all notes |
+| `analyst` | Create/edit own notes, create metric series and points, trigger ingestion |
+| `viewer` | Read-only — published notes only, all entities, all metric data |
 
-> `make lint`, `make test`, `make migrate`, `make seed` require `make dev` to be running first.
+---
 
-## Creating the Admin User
+## Key Features
 
-```bash
-make migrate   # ensure tables exist
-make seed      # creates ADMIN_EMAIL / ADMIN_PASSWORD from .env
-```
+- **JWT auth** with rotating refresh tokens, rate-limited login
+- **Forgot / reset password** flow (SMTP email or console log in dev)
+- **Admin invite flow** — invite users by email with time-limited tokens
+- **Hardware Products, Companies, Datacenters** — full CRUD with pagination
+- **Research Notes** — markdown editor, draft/review/published workflow, entity linking, public slug URLs
+- **Metric Series + Points** — time-series data per entity, bulk upsert, CSV export, dashboard charts
+- **Ingestion Pipeline** — JSON file ingestion, entity extraction, idempotent by content hash, Celery background workers
+- **Unified Search** — PostgreSQL full-text search across notes and source documents with relevance ranking and highlighted snippets
+- **Audit Log** — admin-visible record of all mutations
+- **Redis cache** — 60s TTL on list/detail endpoints, invalidated on write
 
-To change the admin credentials, update `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` and re-run `make seed`.
+---
 
-## Logging In (local)
+## Documentation
 
-```bash
-# via curl
-curl -s -X POST http://localhost:8000/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"admin@example.com","password":"changeme123!"}' | jq .
+| Doc | Description |
+|---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System design, layering, entity relationships |
+| [`docs/AUTH.md`](docs/AUTH.md) | JWT strategy, RBAC, rate limiting, password reset |
+| [`docs/NOTES.md`](docs/NOTES.md) | Research notes workflow, status machine, entity linking |
+| [`docs/METRICS.md`](docs/METRICS.md) | Metric series and points API, dashboard |
+| [`docs/INGESTION.md`](docs/INGESTION.md) | Ingestion pipeline, entity extraction, Celery workers |
+| [`docs/SEARCH.md`](docs/SEARCH.md) | Full-text search architecture, RBAC, query syntax |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Production deployment guide |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture decision records (ADRs) |
 
-# or open http://localhost:5173/login in the browser
-```
+---
 
 ## Environment Variables
 
-Copy `.env.example` → `.env` and set at minimum:
-
-| Variable | Description |
-|---|---|
-| `JWT_SECRET` | Long random string — `openssl rand -hex 32` |
-| `ADMIN_EMAIL` | Initial admin account email |
-| `ADMIN_PASSWORD` | Initial admin account password |
-
-See `.env.example` for the full list.
-
-## Entity Management (Slice 2)
-
-Slice 2 adds three core domain entities browsable via the sidebar.
-
-### Pages
-
-| URL | Description |
-|---|---|
-| `/hardware-products` | List all GPUs / CPUs / accelerators |
-| `/hardware-products/:id` | Detail view with specs |
-| `/companies` | List semiconductor vendors, fabs, cloud providers |
-| `/companies/:id` | Detail view |
-| `/datacenters` | List datacenter sites with capacity |
-| `/datacenters/:id` | Detail view with owner company link |
-
-### REST API
-
-| Method | Path | Auth |
-|---|---|---|
-| GET | `/api/v1/hardware-products` | viewer+ |
-| POST | `/api/v1/hardware-products` | analyst / admin |
-| GET | `/api/v1/hardware-products/{id}` | viewer+ |
-| PATCH | `/api/v1/hardware-products/{id}` | analyst / admin |
-| DELETE | `/api/v1/hardware-products/{id}` | admin only |
-| GET | `/api/v1/companies` | viewer+ |
-| POST | `/api/v1/companies` | analyst / admin |
-| GET | `/api/v1/companies/{id}` | viewer+ |
-| PATCH | `/api/v1/companies/{id}` | analyst / admin |
-| DELETE | `/api/v1/companies/{id}` | admin only |
-| GET | `/api/v1/datacenters` | viewer+ |
-| POST | `/api/v1/datacenters` | analyst / admin |
-| GET | `/api/v1/datacenters/{id}` | viewer+ |
-| PATCH | `/api/v1/datacenters/{id}` | analyst / admin |
-| DELETE | `/api/v1/datacenters/{id}` | admin only |
-
-List endpoints support `?limit=20&offset=0` pagination and are Redis-cached (60s TTL).
-
-### Seed Data
-
-`make seed` now also creates:
-- **Companies**: NVIDIA, AMD, TSMC, Amazon, Google
-- **Hardware Products**: H100, A100, MI300X
-- **Datacenter Sites**: US West GPU Cluster, EU AI Datacenter
-
-## Research Notes Workflow (Slice 3)
-
-Slice 3 adds a full research notes system with markdown editing, entity linking, and a publish workflow.
-
-### Pages
-
-| URL | Description |
-|---|---|
-| `/notes` | List notes (filtered by status / tag / search query) |
-| `/notes/new` | Create a new draft note |
-| `/notes/:id` | Edit note — Write/Preview tabs, tag chips, entity linker |
-| `/published/:slug` | Public read-only rendered page (no auth required) |
-
-### REST API
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/api/v1/notes` | viewer+ | List notes (RBAC-filtered) |
-| POST | `/api/v1/notes` | analyst / admin | Create note |
-| GET | `/api/v1/notes/{id}` | viewer+ | Get note detail |
-| PATCH | `/api/v1/notes/{id}` | author / admin | Update title, body, tags, status |
-| DELETE | `/api/v1/notes/{id}` | author / admin | Delete note |
-| POST | `/api/v1/notes/{id}/publish` | analyst / admin | Publish note → generates slug |
-| GET | `/api/v1/notes/{id}/links` | viewer+ | Get entity links |
-| PUT | `/api/v1/notes/{id}/links` | author / admin | Atomically replace entity links |
-| GET | `/api/v1/published/{slug}` | public | Fetch published note by slug |
-| GET | `/api/v1/audit` | admin only | Audit log (recent activity) |
-
-### Testing the Publish Flow
-
-```bash
-# 1. Login as analyst
-TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"analyst@example.com","password":"Analystpass1!"}' | jq -r .access_token)
-
-# 2. Create a draft note
-NOTE_ID=$(curl -s -X POST http://localhost:8000/api/v1/notes \
-  -H "Authorization: Bearer $TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{"title":"My GPU Analysis","body_markdown":"# H100\n\nGreat chip.","tags":["gpu"]}' | jq -r .id)
-
-# 3. Publish it
-SLUG=$(curl -s -X POST "http://localhost:8000/api/v1/notes/$NOTE_ID/publish" \
-  -H "Authorization: Bearer $TOKEN" | jq -r .slug)
-
-# 4. Read without auth
-curl -s "http://localhost:8000/api/v1/published/$SLUG" | jq .title
-# or open: http://localhost:5173/published/$SLUG
-```
-
-### Seed Data
-
-`make seed` also creates:
-- **3 research notes** (1 published, 1 review, 1 draft)
-- Notes linked to H100, NVIDIA, and US West GPU Cluster
-- Tags: `gpu`, `supply-chain`, `datacenter`
-
-The published note is immediately accessible at `/published/<slug>`.
-
-## Metrics + Dashboard (Slice 4)
-
-Slice 4 adds a `MetricSeries` + `MetricPoint` time-series model for tracking numeric KPIs against any entity, and replaces the placeholder Dashboard with live KPI cards and Recharts trend charts.
-
-### Pages
-
-| URL | Description |
-|---|---|
-| `/dashboard` | KPI cards + metric trend charts |
-
-### REST API
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `GET` | `/api/v1/metrics/overview` | any | KPI counts + chart data |
-| `GET` | `/api/v1/metric-series` | any | List series (paginated) |
-| `POST` | `/api/v1/metric-series` | analyst+ | Create series |
-| `GET` | `/api/v1/metric-series/{id}` | any | Get series |
-| `PATCH` | `/api/v1/metric-series/{id}` | analyst+ | Update series metadata |
-| `DELETE` | `/api/v1/metric-series/{id}` | admin | Delete series |
-| `POST` | `/api/v1/metric-series/{id}/points` | analyst+ | Bulk upsert points (idempotent) |
-| `GET` | `/api/v1/metric-series/{id}/points` | any | List points (with date range filter) |
-| `GET` | `/api/v1/metric-series/{id}/export.csv` | any | Download points as CSV |
-
-### Seed Data
-
-`make seed` now also creates 4 metric series with 18 monthly data points each:
-
-- **H100 Shipment Volume** (hardware_product → H100, unit: units/thousands)
-- **NVIDIA Revenue** (company → NVIDIA, unit: USD billions)
-- **US West DC Power Usage** (datacenter → US West GPU Cluster, unit: MW)
-- **EU AI DC Power Usage** (datacenter → EU AI Datacenter, unit: MW)
-
-See [docs/METRICS.md](docs/METRICS.md) for full documentation.
-
-## Ingestion Pipeline (Slice 5)
-
-Slice 5 adds a full ingestion pipeline: file-based JSON ingest, idempotent deduplication (sha256 content hash), rules-based entity extraction, and Celery background workers.
-
-### Services
-
-| Service | Description |
-|---|---|
-| `worker` | Celery worker — processes ingestion tasks |
-| `scheduler` | Celery Beat — triggers periodic ingestion every `INGESTION_INTERVAL_MIN` minutes |
-
-### Pages
-
-| URL | Description |
-|---|---|
-| `/sources` | List ingested documents with type/search filters; "Run Ingestion" button for analyst+ |
-| `/sources/:id` | Document detail — extracted entity chips, raw text, entity breakdown |
-
-### REST API
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/ingestion/run` | analyst+ | Trigger ingestion run (async, 202) |
-| `GET` | `/api/v1/ingestion/runs` | analyst+ | List all runs (paginated) |
-| `GET` | `/api/v1/ingestion/runs/{id}` | analyst+ | Get run status + stats |
-| `GET` | `/api/v1/sources` | viewer+ | List source documents |
-| `GET` | `/api/v1/sources/{id}` | viewer+ | Get document detail with entity links |
-
-### Running ingestion
-
-```bash
-# One-shot (no Celery needed — runs directly in the api container)
-make ingest
-
-# Or trigger via API
-TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"analyst@example.com","password":"Analystpass1!"}' | jq -r .access_token)
-
-curl -X POST http://localhost:8000/api/v1/ingestion/run \
-  -H "Authorization: Bearer $TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{"source_type":"file","source_name":"local-ingest"}'
-```
-
-### Adding ingest data
-
-Place JSON files in `data/ingest/`. Each file must be an array of objects:
-
-```json
-[
-  {
-    "title": "Article Title",
-    "url": "https://example.com/article",
-    "source_name": "my-feed",
-    "published_at": "2024-01-15T10:00:00Z",
-    "raw_text": "Full text content..."
-  }
-]
-```
-
-Three sample files with 9 AI hardware articles are included at `data/ingest/sample{1,2,3}.json`.
-
-See [docs/INGESTION.md](docs/INGESTION.md) for full documentation.
-
-## Unified Search (Slice 6)
-
-Slice 6 adds a full-text search experience across ResearchNotes and SourceDocuments using PostgreSQL native FTS (tsvector + GIN indexes).
-
-### Pages
-
-| URL | Description |
-|---|------|
-| `/search` | Unified search with All/Notes/Sources tabs, filter panel, paginated results |
-
-### REST API
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `GET` | `/api/v1/search` | any | Full-text search across notes + sources |
-
-**Key parameters:** `q` (required), `type=all|note|source`, `tags`, `status`, `entity_type`, `entity_id`, `source_type`, `start`, `end`, `limit`, `offset`
-
-See [docs/SEARCH.md](docs/SEARCH.md) for full documentation.
-
-## Admin User Management (Slice 7)
-
-Slice 7 adds admin-only user management, a token-based invite flow, security headers, CI, and Playwright e2e tests.
-
-### Pages
-
-| URL | Auth | Description |
-|---|---|---|
-| `/admin/users` | admin only | User table — role dropdown, activate/deactivate, invite modal |
-| `/accept-invite?token=...` | public | Set password and create account from invite link |
-
-### Invite Flow
-
-```bash
-# 1. Admin creates an invite (returns one-time URL)
-TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"admin@example.com","password":"changeme123!"}' | jq -r .access_token)
-
-curl -s -X POST http://localhost:8000/api/v1/users/invite \
-  -H "Authorization: Bearer $TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"colleague@example.com","role":"analyst"}' | jq .invite_url
-
-# 2. Invitee opens the URL in a browser and sets their password
-#    http://localhost:5173/accept-invite?token=<raw-token>
-```
-
-### REST API
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/users/invite` | admin | Create invite, returns one-time URL |
-| `POST` | `/api/v1/users/accept-invite` | public | Accept invite, creates user account |
-| `GET` | `/api/v1/users` | admin | List all users (paginated) |
-| `PATCH` | `/api/v1/users/{id}` | admin | Change role or deactivate/reactivate |
-
-### Security Headers
-
-Every response now includes:
-- `X-Content-Type-Options: nosniff`
-- `X-Frame-Options: DENY`
-- `Referrer-Policy: strict-origin-when-cross-origin`
-
-### CI
-
-GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR to `main`:
-
-| Job | What it does |
-|---|---|
-| `backend` | ruff lint + format check + pytest against real Postgres |
-| `frontend` | ESLint + Vitest |
-| `e2e` | Playwright happy-path against full docker-compose stack |
-
-### Playwright E2E
-
-```bash
-# Requires make dev + make migrate + make seed to be running
-make e2e
-
-# Or with UI mode
-cd apps/web && npx playwright test --ui
-```
-
-See [docs/DECISIONS.md](docs/DECISIONS.md) for architecture decision records.
-
-## UX Polish + Accessibility (Slice 8)
-
-Slice 8 brings the app to demo-ready and production-ready quality.
-
-### What's included
-
-- **Global error handling** — all API errors return `{"error": {"code": "...", "message": "...", "details": {"request_id": "..."}}}`. Every response also carries `X-Request-Id` for tracing.
-- **System info endpoint** — `GET /api/v1/system/info` (admin only) returns version, environment, uptime, and health of DB + Redis.
-- **React ErrorBoundary** — wraps the entire app; catches unexpected render crashes and shows a friendly reload prompt.
-- **Consistent error/loading/empty states** — all list and detail pages use shared `ErrorState`, `LoadingSkeleton`, and `EmptyState` components with retry buttons.
-- **Accessibility** — skip-to-content link, `aria-current="page"` on active nav items, `aria-label` on nav landmarks, `role="alert"` on error states, `id="main-content"` target.
-- **Playwright trace recording** — in CI, traces are retained on failure (`retain-on-failure`).
-
-### Troubleshooting
-
-| Symptom | Fix |
-|---|---|
-| Blank page after login | Check browser console for JS errors; check `X-Request-Id` in failed API calls and search `make logs` |
-| `401 Unauthorized` on every request | JWT secret mismatch — ensure `.env` `JWT_SECRET` matches what was used at token mint time; restart `make dev` |
-| `CORS` errors in browser | Add the frontend origin to `CORS_ORIGINS` in `.env`, then restart the `api` container |
-| DB migration errors on startup | Run `make migrate` manually; check `make logs api` for Alembic errors |
-| Celery worker not picking up jobs | Ensure Redis is healthy (`make logs redis`); confirm `REDIS_URL` is correct |
-| `Cannot connect to Docker daemon` | Start Docker Desktop first |
-| Ingestion runs but no documents appear | Check `INGEST_DIR` path inside the container; ensure JSON files are valid arrays of objects |
-
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for production deployment notes.
-
-## Where to Put Future Modules
-
-| Concern | Location |
-|---|---|
-| New API domain (e.g. papers) | `apps/api/src/api/routes/papers.py` + model in `models/` |
-| New frontend page | `apps/web/src/routes/` + register in `App.tsx` |
-| Shared types | `packages/shared/` |
-| Infrastructure changes | `infra/docker-compose.yml` |
-| Architecture decisions | `docs/` |
-
-## Architecture
-
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system overview
-- [docs/AUTH.md](docs/AUTH.md) — token strategy & RBAC
-- [docs/DECISIONS.md](docs/DECISIONS.md) — architecture decision records
+See [`.env.example`](.env.example) for the full list with descriptions.
+
+Critical variables to set before deploying:
+
+- `JWT_SECRET` — generate with `openssl rand -hex 32`
+- `ADMIN_EMAIL` / `ADMIN_PASSWORD` — initial admin account
+- `DATABASE_URL` / `REDIS_URL` — connection strings
+- `CORS_ORIGINS` / `FRONTEND_BASE_URL` — your frontend URL
+- `SMTP_HOST` / `SMTP_USER` / `SMTP_PASSWORD` — email delivery (leave blank to log invite/reset URLs to console in dev)

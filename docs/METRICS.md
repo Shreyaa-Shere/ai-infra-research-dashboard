@@ -102,7 +102,7 @@ Charts are built with [Recharts](https://recharts.org).
 
 ## Seed Data
 
-Running `make seed` creates 4 metric series with 18 monthly points each (2024-01 → 2025-06):
+Running `docker compose -f infra/docker-compose.yml exec api python scripts/seed.py` creates 4 metric series with 18 monthly points each (2024-01 → 2025-06):
 
 | Series | Entity | Unit |
 |--------|--------|------|

@@ -23,24 +23,29 @@ Lookup at accept-time: `sha256(raw_token)` → query by `token_hash`.
 
 ---
 
-## ADR-002 — Email delivery stub
+## ADR-002 — Email delivery via stdlib SMTP with console fallback
 
 **Date:** 2026-03-05
-**Status:** Accepted (stub; production upgrade pending)
+**Status:** Accepted
 
 ### Context
 
-The invite flow needs to deliver the invite URL to the invitee. Integrating a transactional email provider (SendGrid, SES, Resend) adds external dependencies and secrets management complexity.
+The invite and password-reset flows need to deliver URLs to users. Integrating a transactional email provider (SendGrid, SES, Resend) adds external dependencies and secrets management complexity.
 
 ### Decision
 
-For the MVP, the invite URL is **returned directly in the API response** (`POST /api/v1/users/invite → { invite_url }`). The admin copies and shares it manually (e.g. via Slack or email). No email is sent by the backend.
+Use Python's stdlib `smtplib` (no new dependencies) wrapped in `asyncio.run_in_executor` so it does not block the async event loop. An `EmailService` singleton (`services/email.py`) handles both invite and password-reset emails.
+
+**Console/log fallback:** When `SMTP_HOST` is empty (default in `.env.example`), the email body and URL are printed to the API container logs instead of sent. This makes local development zero-config.
+
+**Configuration:** Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS` in `.env` to enable real delivery.
 
 ### Consequences
 
-- Zero external dependencies in development.
-- Admin must manually relay the URL — acceptable for a small team internal tool.
-- **Production upgrade path:** add a `send_invite_email(invite_url, to_email)` call inside `UserService.invite_user()`, backed by any SMTP/API provider, without changing the invite model or token logic.
+- No external dependencies added — stdlib only.
+- Works in dev with zero config (console mode).
+- Invite URL is also returned in the `POST /api/v1/users/invite` API response as a fallback, so admins can still copy and share it manually if SMTP is not configured.
+- For high-volume production use, replace `EmailService._send_sync` with an API-based provider (Resend, SES) — the `send_invite` / `send_password_reset` interface stays the same.
 
 ---
 
@@ -133,7 +138,7 @@ Admins can invite new users with `analyst` or `viewer` roles. The question was w
 
 ### Decision
 
-**Admin role is excluded** from the invite flow. `UserInviteCreate` has a Pydantic validator that raises a 422 if `role == "admin"`. Admin accounts must be created directly via `make seed` or direct DB insert.
+**Admin role is excluded** from the invite flow. `UserInviteCreate` has a Pydantic validator that raises a 422 if `role == "admin"`. Admin accounts must be created directly via `docker compose -f infra/docker-compose.yml exec api python scripts/seed.py` or a direct DB insert.
 
 ### Rationale
 

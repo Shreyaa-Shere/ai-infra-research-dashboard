@@ -128,7 +128,7 @@ SourceDocument                 (standalone, deduplicated by content_hash)
 data/ingest/*.json
         │
         ▼
-  Celery Worker / make ingest
+  Celery Worker / one-shot exec
         │
         ▼
   IngestionService.execute_run()

@@ -74,14 +74,14 @@ services:
     command: celery -A api.workers.celery_app beat --loglevel=info
 ```
 
-Run with: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`
+Run with: `docker compose -f infra/docker-compose.yml -f docker-compose.prod.yml up -d`
 
 ## Database Migrations
 
 Always run migrations before starting the API in production:
 
 ```bash
-docker compose exec api alembic upgrade head
+docker compose -f infra/docker-compose.yml exec api alembic upgrade head
 ```
 
 In a CI/CD pipeline, run migrations as a separate step before deploying the new image.
@@ -90,13 +90,10 @@ In a CI/CD pipeline, run migrations as a separate step before deploying the new 
 
 ```bash
 # 1. Run migrations
-docker compose exec api alembic upgrade head
+docker compose -f infra/docker-compose.yml exec api alembic upgrade head
 
-# 2. Create the admin user (idempotent)
-docker compose exec api python -m api.scripts.seed
-
-# 3. Optionally seed sample data
-docker compose exec api python -m api.scripts.seed
+# 2. Create the admin user and seed sample data (idempotent)
+docker compose -f infra/docker-compose.yml exec api python scripts/seed.py
 ```
 
 ## Security Checklist
