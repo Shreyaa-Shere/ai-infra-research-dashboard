@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import LoadingSkeleton from '../../components/LoadingSkeleton'
 import { useSearchResults } from '../../hooks/useSearch'
 import { useAuth } from '../../store/AuthContext'
-import type { NoteSearchResult, SearchResult, SourceSearchResult } from '../../lib/entities'
+import type { NoteSearchResult, NoteStatus, SearchResult, SourceSearchResult } from '../../lib/entities'
 
 type TabType = 'all' | 'note' | 'source'
 
@@ -105,7 +105,7 @@ export default function SearchPage() {
   const [activeTab, setActiveTab] = useState<TabType>(
     (searchParams.get('type') as TabType) ?? 'all'
   )
-  const [status, setStatus] = useState(searchParams.get('status') ?? '')
+  const [status, setStatus] = useState<NoteStatus | ''>((searchParams.get('status') ?? '') as NoteStatus | '')
   const [sourceType, setSourceType] = useState(searchParams.get('source_type') ?? '')
   const [showFilters, setShowFilters] = useState(false)
   const [page, setPage] = useState(0)
