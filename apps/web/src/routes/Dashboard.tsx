@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import {
   Bar,
   BarChart,
@@ -179,9 +180,9 @@ export default function Dashboard() {
         <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 py-12 text-center">
           <p className="text-sm text-gray-500">
             No metric data yet.{' '}
-            <a href="/metrics" className="text-indigo-600 hover:underline">
+            <Link to="/metric-series" className="text-indigo-600 hover:underline">
               Add metric series
-            </a>{' '}
+            </Link>{' '}
             to see charts here.
           </p>
         </div>

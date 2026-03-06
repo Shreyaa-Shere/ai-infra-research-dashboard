@@ -395,7 +395,17 @@ export default function NoteEditor() {
                   disabled={saving}
                   className="rounded-md border border-yellow-400 bg-yellow-50 px-4 py-2 text-sm font-medium text-yellow-800 hover:bg-yellow-100 disabled:opacity-50"
                 >
-                  Move to Review
+                  Submit for Review
+                </button>
+              )}
+              {existing?.status === 'review' && user?.role === 'admin' && (
+                <button
+                  onClick={() => handleSave('draft')}
+                  disabled={saving}
+                  title="Return this note to draft so the author can revise it"
+                  className="rounded-md border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800 hover:bg-orange-100 disabled:opacity-50"
+                >
+                  Reject to Draft
                 </button>
               )}
             </>

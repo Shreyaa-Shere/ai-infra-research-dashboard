@@ -372,3 +372,26 @@ export interface UserUpdate {
   role?: Role
   is_active?: boolean
 }
+
+// ── Audit Log ──────────────────────────────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: string
+  actor_user_id: string | null
+  action: string
+  entity_type: string
+  entity_id: string | null
+  meta_json: string | null
+  created_at: string
+}
+
+// ── System Info ────────────────────────────────────────────────────────────────
+
+export interface SystemInfo {
+  version: string
+  git_sha: string
+  environment: string
+  uptime_seconds: number
+  db_connected: boolean
+  redis_connected: boolean
+}

@@ -8,7 +8,7 @@ import type { UserAdminOut, Role } from '../../lib/entities'
 const ROLES: Array<'analyst' | 'viewer'> = ['analyst', 'viewer']
 
 export default function UsersPage() {
-  const { accessToken } = useAuth()
+  const { accessToken, user: currentUser } = useAuth()
   const qc = useQueryClient()
 
   const [limit] = useState(20)
@@ -99,8 +99,17 @@ export default function UsersPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {data?.items.map((user: UserAdminOut) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{user.email}</td>
+                  <tr key={user.id} className={`hover:bg-gray-50 ${user.id === currentUser?.id ? 'bg-blue-50/40' : ''}`}>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      <div className="flex items-center gap-2">
+                        {user.email}
+                        {user.id === currentUser?.id && (
+                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600">
+                            You
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3">
                       <select
                         value={user.role}
@@ -110,7 +119,9 @@ export default function UsersPage() {
                             data: { role: e.target.value as Role },
                           })
                         }
-                        className="border border-gray-300 rounded px-2 py-1 text-xs"
+                        disabled={user.id === currentUser?.id}
+                        title={user.id === currentUser?.id ? 'You cannot change your own role' : undefined}
+                        className="border border-gray-300 rounded px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-50"
                         data-testid={`role-select-${user.id}`}
                       >
                         {(['admin', 'analyst', 'viewer'] as Role[]).map((r) => (
@@ -135,22 +146,31 @@ export default function UsersPage() {
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() =>
-                          updateMutation.mutate({
-                            id: user.id,
-                            data: { is_active: !user.is_active },
-                          })
-                        }
-                        className={`text-xs px-2 py-1 rounded border ${
-                          user.is_active
-                            ? 'border-red-300 text-red-600 hover:bg-red-50'
-                            : 'border-green-300 text-green-600 hover:bg-green-50'
-                        }`}
-                        data-testid={`toggle-active-${user.id}`}
-                      >
-                        {user.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
+                      {user.id === currentUser?.id ? (
+                        <span
+                          className="text-xs text-gray-400 cursor-not-allowed"
+                          title="You cannot deactivate your own account"
+                        >
+                          —
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            updateMutation.mutate({
+                              id: user.id,
+                              data: { is_active: !user.is_active },
+                            })
+                          }
+                          className={`text-xs px-2 py-1 rounded border ${
+                            user.is_active
+                              ? 'border-red-300 text-red-600 hover:bg-red-50'
+                              : 'border-green-300 text-green-600 hover:bg-green-50'
+                          }`}
+                          data-testid={`toggle-active-${user.id}`}
+                        >
+                          {user.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -58,15 +58,20 @@ export default function MetricSeriesDetail() {
   const [showAddPoint, setShowAddPoint] = useState(false)
   const [addMode, setAddMode] = useState<'single' | 'bulk'>('single')
   const [csvExporting, setCsvExporting] = useState(false)
+  const [csvError, setCsvError] = useState<string | null>(null)
 
   async function handleExportCsv() {
     if (!accessToken || !data) return
     setCsvExporting(true)
+    setCsvError(null)
     try {
       const res = await fetch(metricsApi.exportCsvUrl(data.id), {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
-      if (!res.ok) throw new Error('Export failed')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error((body as { error?: { message?: string } })?.error?.message ?? `Server error ${res.status}`)
+      }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -74,8 +79,8 @@ export default function MetricSeriesDetail() {
       a.download = `${data.name.replace(/\s+/g, '_')}.csv`
       a.click()
       URL.revokeObjectURL(url)
-    } catch {
-      // silently ignore — browser will show no download
+    } catch (err) {
+      setCsvError(err instanceof Error ? err.message : 'Export failed — please try again.')
     } finally {
       setCsvExporting(false)
     }
@@ -203,6 +208,19 @@ export default function MetricSeriesDetail() {
           )}
         </div>
       </div>
+
+      {csvError && (
+        <div className="mb-4 flex items-start gap-3 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <span className="flex-1">Export failed: {csvError}</span>
+          <button
+            onClick={() => setCsvError(null)}
+            className="shrink-0 text-red-400 hover:text-red-600 font-medium"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

@@ -20,6 +20,8 @@ import SourceDetail from './routes/sources/SourceDetail'
 import SearchPage from './routes/search/SearchPage'
 import AcceptInvitePage from './routes/accept-invite/AcceptInvitePage'
 import UsersPage from './routes/admin/UsersPage'
+import AuditLogPage from './routes/admin/AuditLogPage'
+import SystemInfoPage from './routes/admin/SystemInfoPage'
 import MetricSeriesList from './routes/metric-series/MetricSeriesList'
 import MetricSeriesDetail from './routes/metric-series/MetricSeriesDetail'
 
@@ -50,6 +52,8 @@ export default function App() {
           {/* Admin-only routes */}
           <Route element={<AdminRoute />}>
             <Route path="/admin/users" element={<UsersPage />} />
+            <Route path="/admin/audit-log" element={<AuditLogPage />} />
+            <Route path="/admin/system" element={<SystemInfoPage />} />
           </Route>
         </Route>
       </Route>

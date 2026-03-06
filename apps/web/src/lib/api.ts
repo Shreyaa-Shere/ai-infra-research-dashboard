@@ -59,6 +59,7 @@ export interface RefreshResponse {
 
 import type {
   AcceptInviteRequest,
+  AuditLogEntry,
   Company,
   CompanyCreate,
   CompanyUpdate,
@@ -90,6 +91,7 @@ import type {
   SourceDocumentDetail,
   SourceDocumentSummary,
   SourceType,
+  SystemInfo,
   UserAdminOut,
   UserInviteCreate,
   UserInviteResponse,
@@ -406,6 +408,20 @@ export const usersApi = {
       token,
       body: JSON.stringify(data),
     }),
+}
+
+// ── Audit Log ─────────────────────────────────────────────────────────────────
+
+export const auditApi = {
+  list: (token: string, params: { limit?: number; offset?: number } = {}) =>
+    request<PaginatedResponse<AuditLogEntry>>(`/api/v1/audit${qs(params)}`, { token }),
+}
+
+// ── System Info ───────────────────────────────────────────────────────────────
+
+export const systemApi = {
+  info: (token: string) =>
+    request<SystemInfo>('/api/v1/system/info', { token }),
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────

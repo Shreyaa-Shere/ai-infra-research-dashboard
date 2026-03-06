@@ -14,6 +14,8 @@ const NAV_LINKS = [
 
 const ADMIN_LINKS = [
   { to: '/admin/users', label: 'User Management' },
+  { to: '/admin/audit-log', label: 'Audit Log' },
+  { to: '/admin/system', label: 'System Info' },
 ]
 
 export default function Layout() {
