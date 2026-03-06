@@ -28,6 +28,12 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   datacenter: 'Datacenter',
 }
 
+const ENTITY_TYPE_ROUTES: Record<string, string> = {
+  hardware_product: '/hardware-products',
+  company: '/companies',
+  datacenter: '/datacenters',
+}
+
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex justify-between border-b border-gray-100 py-2 text-sm">
@@ -214,7 +220,17 @@ export default function MetricSeriesDetail() {
             <DetailRow label="Unit" value={data.unit} />
             <DetailRow label="Frequency" value={data.frequency} />
             <DetailRow label="Source" value={data.source} />
-            <DetailRow label="Entity ID" value={<span className="font-mono text-xs">{data.entity_id}</span>} />
+            <DetailRow
+          label="Entity"
+          value={
+            <Link
+              to={`${ENTITY_TYPE_ROUTES[data.entity_type] ?? ''}/${data.entity_id}`}
+              className="font-mono text-xs text-blue-600 hover:underline"
+            >
+              {ENTITY_TYPE_LABELS[data.entity_type]} ↗
+            </Link>
+          }
+        />
           </div>
 
           {/* Data Points */}
