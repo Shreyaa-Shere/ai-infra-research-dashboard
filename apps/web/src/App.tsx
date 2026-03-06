@@ -19,6 +19,8 @@ import SourceList from './routes/sources/SourceList'
 import SourceDetail from './routes/sources/SourceDetail'
 import SearchPage from './routes/search/SearchPage'
 import AcceptInvitePage from './routes/accept-invite/AcceptInvitePage'
+import ForgotPasswordPage from './routes/forgot-password/ForgotPasswordPage'
+import ResetPasswordPage from './routes/reset-password/ResetPasswordPage'
 import UsersPage from './routes/admin/UsersPage'
 import AuditLogPage from './routes/admin/AuditLogPage'
 import SystemInfoPage from './routes/admin/SystemInfoPage'
@@ -32,6 +34,8 @@ export default function App() {
       {/* Public routes — no auth required */}
       <Route path="/published/:slug" element={<PublishedNote />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />

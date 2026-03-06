@@ -57,7 +57,7 @@ async def list_metric_series(
 async def create_metric_series(
     body: MetricSeriesCreate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(["admin", "analyst"])),
 ) -> MetricSeriesResponse:
     return await _svc.create_series(session, body, current_user)
 
@@ -76,7 +76,7 @@ async def update_metric_series(
     id: uuid.UUID,
     body: MetricSeriesUpdate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(["admin", "analyst"])),
 ) -> MetricSeriesResponse:
     return await _svc.update_series(session, id, body, current_user)
 
@@ -99,7 +99,7 @@ async def upsert_metric_points(
     id: uuid.UUID,
     body: MetricPointsUpsertRequest,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(["admin", "analyst"])),
 ) -> dict:
     count = await _svc.upsert_points(session, id, body, current_user)
     return {"upserted": count}

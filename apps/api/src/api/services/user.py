@@ -16,11 +16,14 @@ from api.schemas.errors import api_error
 from api.schemas.pagination import PaginatedResponse
 from api.schemas.user import (
     AcceptInviteRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
     UserAdminOut,
     UserInviteCreate,
     UserInviteResponse,
     UserUpdate,
 )
+from api.services.email import email_svc
 from api.settings import settings
 
 _repo = UserRepository()
@@ -70,6 +73,13 @@ class UserService:
         await session.commit()
 
         invite_url = f"{settings.frontend_base_url}/accept-invite?token={raw_token}"
+
+        # Fire-and-forget: send invite email (console mode in dev if SMTP_HOST is empty)
+        await email_svc.send_invite(
+            to_email=payload.email,
+            invite_url=invite_url,
+            role=payload.role.value,
+        )
 
         return UserInviteResponse(
             id=invite.id,
@@ -187,6 +197,62 @@ class UserService:
         await session.commit()
 
         return UserAdminOut.model_validate(user)
+
+    async def forgot_password(
+        self,
+        session: AsyncSession,
+        payload: ForgotPasswordRequest,
+    ) -> None:
+        """
+        Always returns silently — never reveals whether the email is registered.
+        If the account exists and is active, a reset token is created and emailed.
+        """
+        user = await _repo.get_by_email(session, payload.email)
+        if not user or not user.is_active:
+            return  # silent — no information leak
+
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = hash_token(raw_token)
+        expires_at = datetime.now(UTC) + timedelta(minutes=settings.reset_token_ttl_min)
+
+        await _repo.create_password_reset_token(
+            session, user.id, token_hash, expires_at
+        )
+        await session.commit()
+
+        reset_url = f"{settings.frontend_base_url}/reset-password?token={raw_token}"
+        await email_svc.send_password_reset(
+            to_email=user.email,
+            reset_url=reset_url,
+        )
+
+    async def reset_password(
+        self,
+        session: AsyncSession,
+        payload: ResetPasswordRequest,
+    ) -> None:
+        token_hash = hash_token(payload.token)
+        reset_token = await _repo.get_password_reset_token(session, token_hash)
+
+        if not reset_token:
+            raise api_error("RESET_TOKEN_INVALID", "Invalid or expired reset link", 400)
+        if reset_token.used_at is not None:
+            raise api_error(
+                "RESET_TOKEN_USED", "This reset link has already been used", 400
+            )
+        if reset_token.expires_at < datetime.now(UTC):
+            raise api_error("RESET_TOKEN_EXPIRED", "This reset link has expired", 400)
+
+        user = await _repo.get_by_id(session, reset_token.user_id)
+        if not user or not user.is_active:
+            raise api_error("USER_INACTIVE", "Account not found or deactivated", 400)
+
+        hashed_pw = _hash_password(payload.new_password)
+        await _repo.update_password(session, user, hashed_pw)
+        await _repo.mark_reset_token_used(session, reset_token)
+        # Invalidate all existing sessions — user must log in with new password
+        await _repo.revoke_all_refresh_tokens(session, user.id)
+        await session.commit()
 
 
 _svc = UserService()

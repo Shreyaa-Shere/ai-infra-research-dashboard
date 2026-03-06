@@ -122,6 +122,18 @@ export const authApi = {
 
   me: (accessToken: string) =>
     request<User>('/api/v1/me', { token: accessToken }),
+
+  forgotPassword: (email: string) =>
+    request<void>('/api/v1/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    request<void>('/api/v1/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, new_password: newPassword }),
+    }),
 }
 
 // ── Entity helpers ────────────────────────────────────────────────────────────

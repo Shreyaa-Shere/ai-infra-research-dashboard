@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.models.password_reset_token import PasswordResetToken
 from api.models.refresh_token import RefreshToken
 from api.models.user import Role, User
 from api.models.user_invite import UserInvite
@@ -122,4 +123,45 @@ class UserRepository:
 
     async def mark_invite_used(self, session: AsyncSession, invite: UserInvite) -> None:
         invite.used_at = datetime.now(UTC)
+        await session.flush()
+
+    # ── password reset tokens ─────────────────────────────────────────────────
+
+    async def create_password_reset_token(
+        self,
+        session: AsyncSession,
+        user_id: uuid.UUID,
+        token_hash: str,
+        expires_at: datetime,
+    ) -> PasswordResetToken:
+        token = PasswordResetToken(
+            id=uuid.uuid4(),
+            user_id=user_id,
+            token_hash=token_hash,
+            expires_at=expires_at,
+        )
+        session.add(token)
+        await session.flush()
+        return token
+
+    async def get_password_reset_token(
+        self, session: AsyncSession, token_hash: str
+    ) -> PasswordResetToken | None:
+        result = await session.execute(
+            select(PasswordResetToken).where(
+                PasswordResetToken.token_hash == token_hash
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def mark_reset_token_used(
+        self, session: AsyncSession, token: PasswordResetToken
+    ) -> None:
+        token.used_at = datetime.now(UTC)
+        await session.flush()
+
+    async def update_password(
+        self, session: AsyncSession, user: User, hashed_password: str
+    ) -> None:
+        user.hashed_password = hashed_password
         await session.flush()

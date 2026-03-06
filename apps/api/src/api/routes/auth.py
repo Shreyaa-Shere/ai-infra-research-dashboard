@@ -21,6 +21,8 @@ from api.schemas.auth import (
     UserOut,
 )
 from api.schemas.errors import api_error
+from api.schemas.user import ForgotPasswordRequest, ResetPasswordRequest
+from api.services.user import _svc as user_svc
 from api.settings import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -101,6 +103,30 @@ async def refresh(
     await session.commit()
 
     return RefreshResponse(access_token=access_token, refresh_token=raw_refresh)
+
+
+@router.post("/auth/forgot-password", status_code=204)
+@limiter.limit("5/minute")
+async def forgot_password(
+    request: Request,
+    body: ForgotPasswordRequest,
+    session: AsyncSession = Depends(get_session),
+) -> Response:
+    """
+    Always responds 204 regardless of whether the email is registered.
+    This prevents user-enumeration attacks.
+    """
+    await user_svc.forgot_password(session, body)
+    return Response(status_code=204)
+
+
+@router.post("/auth/reset-password", status_code=204)
+async def reset_password(
+    body: ResetPasswordRequest,
+    session: AsyncSession = Depends(get_session),
+) -> Response:
+    await user_svc.reset_password(session, body)
+    return Response(status_code=204)
 
 
 @router.post("/logout", status_code=204)

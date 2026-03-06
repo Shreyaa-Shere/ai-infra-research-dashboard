@@ -44,5 +44,16 @@ class Settings(BaseSettings):
     # ── Invites ────────────────────────────────────────────────────────────────
     invite_token_ttl_days: int = 7
 
+    # ── Password reset ─────────────────────────────────────────────────────────
+    reset_token_ttl_min: int = 60  # 1 hour
+
+    # ── SMTP (leave smtp_host empty to use console/log mode in dev) ─────────────
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "noreply@example.com"
+    smtp_tls: bool = True
+
 
 settings = Settings()

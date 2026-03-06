@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { loginSchema, type LoginInput } from '../lib/schemas'
 import { useAuth } from '../store/AuthContext'
 
@@ -8,6 +8,8 @@ type FieldErrors = Partial<Record<keyof LoginInput, string>>
 export default function LoginForm() {
   const { login, isLoading, error } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const successMessage = (location.state as { message?: string } | null)?.message ?? null
   const [data, setData] = useState<Partial<LoginInput>>({ email: '', password: '' })
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
 
@@ -35,6 +37,12 @@ export default function LoginForm() {
       onSubmit={handleSubmit}
       className="bg-white shadow rounded-lg p-8 flex flex-col gap-5"
     >
+      {successMessage && (
+        <div className="rounded-md bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+          {successMessage}
+        </div>
+      )}
+
       {error && (
         <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
@@ -59,9 +67,14 @@ export default function LoginForm() {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Password
-        </label>
+        <div className="flex items-center justify-between mb-1">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            Password
+          </label>
+          <Link to="/forgot-password" className="text-xs text-blue-600 hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <input
           id="password"
           type="password"
