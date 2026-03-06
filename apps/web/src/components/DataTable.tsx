@@ -13,7 +13,7 @@ interface DataTableProps<T> {
   keyField?: keyof T
 }
 
-export default function DataTable<T extends Record<string, unknown>>({
+export default function DataTable<T extends object>({
   columns,
   data,
   onRowClick,
@@ -45,7 +45,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 <td key={col.key} className="px-4 py-3 text-gray-700">
                   {col.render
                     ? col.render(row)
-                    : (row[col.key] as ReactNode) ?? '—'}
+                    : ((row as Record<string, unknown>)[col.key] as ReactNode) ?? '—'}
                 </td>
               ))}
             </tr>
