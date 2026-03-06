@@ -293,3 +293,155 @@ async def test_audit_log_populated_on_create(
     assert "note.created" in actions
 
     await _cleanup_notes(db)
+
+
+@pytest.mark.asyncio
+async def test_audit_meta_json_has_title_on_update(
+    api_client: AsyncClient,
+    admin_token: str,
+    db: AsyncSession,
+) -> None:
+    """note.updated audit entry must include the note title in meta_json."""
+    import json as _json
+
+    create = await api_client.post(
+        "/api/v1/notes",
+        json={"title": "Meta Title Test", "body_markdown": "initial body"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert create.status_code == 201
+    note_id = create.json()["id"]
+
+    await api_client.patch(
+        f"/api/v1/notes/{note_id}",
+        json={"body_markdown": "updated body"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    audit = await api_client.get(
+        "/api/v1/audit",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    updated_entries = [
+        e for e in audit.json()["items"]
+        if e["action"] == "note.updated" and e["entity_id"] == note_id
+    ]
+    assert len(updated_entries) > 0, "Expected at least one note.updated audit entry"
+    meta = _json.loads(updated_entries[0]["meta_json"])
+    assert meta.get("title") == "Meta Title Test"
+
+    await _cleanup_notes(db)
+
+
+@pytest.mark.asyncio
+async def test_audit_meta_json_has_title_on_publish(
+    api_client: AsyncClient,
+    admin_token: str,
+    db: AsyncSession,
+) -> None:
+    """note.published audit entry must include the note title in meta_json."""
+    import json as _json
+
+    create = await api_client.post(
+        "/api/v1/notes",
+        json={"title": "Publish Meta Test", "body_markdown": "body"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert create.status_code == 201
+    note_id = create.json()["id"]
+
+    pub = await api_client.post(
+        f"/api/v1/notes/{note_id}/publish",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert pub.status_code == 200
+
+    audit = await api_client.get(
+        "/api/v1/audit",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    published_entries = [
+        e for e in audit.json()["items"]
+        if e["action"] == "note.published" and e["entity_id"] == note_id
+    ]
+    assert len(published_entries) > 0, "Expected at least one note.published audit entry"
+    meta = _json.loads(published_entries[0]["meta_json"])
+    assert meta.get("title") == "Publish Meta Test"
+
+    await _cleanup_notes(db)
+
+
+@pytest.mark.asyncio
+async def test_audit_meta_json_has_title_on_delete(
+    api_client: AsyncClient,
+    admin_token: str,
+    db: AsyncSession,
+) -> None:
+    """note.deleted audit entry must preserve the note title before deletion."""
+    import json as _json
+
+    create = await api_client.post(
+        "/api/v1/notes",
+        json={"title": "Delete Meta Test", "body_markdown": "body"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert create.status_code == 201
+    note_id = create.json()["id"]
+
+    delete_resp = await api_client.delete(
+        f"/api/v1/notes/{note_id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert delete_resp.status_code == 204
+
+    audit = await api_client.get(
+        "/api/v1/audit",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    deleted_entries = [
+        e for e in audit.json()["items"]
+        if e["action"] == "note.deleted" and e["entity_id"] == note_id
+    ]
+    assert len(deleted_entries) > 0, "Expected at least one note.deleted audit entry"
+    meta = _json.loads(deleted_entries[0]["meta_json"])
+    assert meta.get("title") == "Delete Meta Test"
+
+    await _cleanup_notes(db)
+
+
+@pytest.mark.asyncio
+async def test_admin_can_reject_note_to_draft(
+    api_client: AsyncClient,
+    admin_token: str,
+    analyst_token: str,
+    db: AsyncSession,
+) -> None:
+    """Admin can move a note from review back to draft (reject flow)."""
+    # Analyst creates a draft note
+    create = await api_client.post(
+        "/api/v1/notes",
+        json={"title": "Reject Test Note", "body_markdown": "body"},
+        headers={"Authorization": f"Bearer {analyst_token}"},
+    )
+    assert create.status_code == 201
+    note_id = create.json()["id"]
+
+    # Analyst submits for review
+    review = await api_client.patch(
+        f"/api/v1/notes/{note_id}",
+        json={"status": "review"},
+        headers={"Authorization": f"Bearer {analyst_token}"},
+    )
+    assert review.status_code == 200
+    assert review.json()["status"] == "review"
+
+    # Admin rejects back to draft
+    reject = await api_client.patch(
+        f"/api/v1/notes/{note_id}",
+        json={"status": "draft"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert reject.status_code == 200
+    assert reject.json()["status"] == "draft"
+
+    await _cleanup_notes(db)

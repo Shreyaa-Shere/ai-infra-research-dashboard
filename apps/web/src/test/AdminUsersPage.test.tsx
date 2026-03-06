@@ -113,6 +113,43 @@ describe('UsersPage', () => {
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
   })
 
+  it('shows "You" badge on the current admin own row', async () => {
+    mockAdmin() // current user is user-1 (admin@example.com)
+    vi.mocked(usersApi.list).mockResolvedValue(MOCK_PAGINATED)
+
+    render(<UsersPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => screen.getByTestId('users-table'))
+    expect(screen.getByText('You')).toBeInTheDocument()
+  })
+
+  it('disables the role dropdown for the current admin own row', async () => {
+    mockAdmin()
+    vi.mocked(usersApi.list).mockResolvedValue(MOCK_PAGINATED)
+
+    render(<UsersPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => screen.getByTestId('users-table'))
+    const ownRoleSelect = screen.getByTestId('role-select-user-1')
+    expect(ownRoleSelect).toBeDisabled()
+    // Other user's select should NOT be disabled
+    const otherRoleSelect = screen.getByTestId('role-select-user-2')
+    expect(otherRoleSelect).not.toBeDisabled()
+  })
+
+  it('hides deactivate button for the current admin own row', async () => {
+    mockAdmin()
+    vi.mocked(usersApi.list).mockResolvedValue(MOCK_PAGINATED)
+
+    render(<UsersPage />, { wrapper: makeWrapper() })
+
+    await waitFor(() => screen.getByTestId('users-table'))
+    // Own row has no toggle-active button
+    expect(screen.queryByTestId('toggle-active-user-1')).not.toBeInTheDocument()
+    // Other user's row still has the button
+    expect(screen.getByTestId('toggle-active-user-2')).toBeInTheDocument()
+  })
+
   it('shows invite URL after successful invite', async () => {
     mockAdmin()
     vi.mocked(usersApi.list).mockResolvedValue(MOCK_PAGINATED)
