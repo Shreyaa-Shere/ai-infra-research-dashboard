@@ -105,7 +105,7 @@ async def refresh(
     return RefreshResponse(access_token=access_token, refresh_token=raw_refresh)
 
 
-@router.post("/auth/forgot-password", status_code=204)
+@router.post("/forgot-password", status_code=204)
 @limiter.limit("5/minute")
 async def forgot_password(
     request: Request,
@@ -120,7 +120,7 @@ async def forgot_password(
     return Response(status_code=204)
 
 
-@router.post("/auth/reset-password", status_code=204)
+@router.post("/reset-password", status_code=204)
 async def reset_password(
     body: ResetPasswordRequest,
     session: AsyncSession = Depends(get_session),
