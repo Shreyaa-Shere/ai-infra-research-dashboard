@@ -2,6 +2,7 @@
 
 import asyncio
 import datetime
+import hashlib
 import logging
 import re
 import uuid
@@ -13,6 +14,7 @@ from api.auth.hashing import hash_password
 from api.db.session import async_session_factory
 from api.models import User, RefreshToken  # noqa: F401 — ensure models are registered
 from api.models.company import Company, CompanyType
+from api.models.source_document import IngestionRun, IngestionStatus, RunStatus, SourceDocument, SourceEntityLink, SourceType
 from api.models.datacenter_site import DatacenterSite, DatacenterStatus
 from api.models.hardware_product import HardwareCategory, HardwareProduct
 from api.models.metric import MetricEntityType, MetricFrequency, MetricPoint, MetricSeries
@@ -946,6 +948,328 @@ async def seed() -> None:
             )
             await session.execute(stmt)
             logger.info("Created MetricSeries '%s' with %d points.", ms_data["name"], len(rows))
+
+        await session.commit()
+
+        # ── Source Documents (simulated ingestion results) ─────────────────────
+        def _content_hash(title: str, url: str | None, published_at: datetime.datetime | None, raw_text: str) -> str:
+            pub_str = published_at.isoformat() if published_at else ""
+            raw = f"{title}|{url or ''}|{pub_str}|{raw_text[:500]}"
+            return hashlib.sha256(raw.encode()).hexdigest()
+
+        # Re-fetch entity IDs for source entity links
+        co_nvidia = await _get_or_skip(session, Company, name="NVIDIA")
+        co_amd = await _get_or_skip(session, Company, name="AMD")
+        co_intel = await _get_or_skip(session, Company, name="Intel")
+        co_google = await _get_or_skip(session, Company, name="Google")
+        co_microsoft = await _get_or_skip(session, Company, name="Microsoft")
+        co_meta = await _get_or_skip(session, Company, name="Meta")
+        co_tsmc = await _get_or_skip(session, Company, name="TSMC")
+        hw_h100 = await _get_or_skip(session, HardwareProduct, name="H100", vendor="NVIDIA")
+        hw_h200 = await _get_or_skip(session, HardwareProduct, name="H200", vendor="NVIDIA")
+        hw_b100 = await _get_or_skip(session, HardwareProduct, name="B100", vendor="NVIDIA")
+        hw_mi300x = await _get_or_skip(session, HardwareProduct, name="MI300X", vendor="AMD")
+        hw_gaudi3 = await _get_or_skip(session, HardwareProduct, name="Gaudi 3", vendor="Intel")
+        dc_us = await _get_or_skip(session, DatacenterSite, name="US West GPU Cluster")
+        dc_meta = await _get_or_skip(session, DatacenterSite, name="Meta AI Texas Campus")
+        dc_azure = await _get_or_skip(session, DatacenterSite, name="Azure East US AI Hub")
+
+        source_docs = [
+            {
+                "title": "NVIDIA Reports Record Q4 FY2025 Revenue of $39.3 Billion",
+                "url": "https://investor.nvidia.com/news-details/2025/NVIDIA-Reports-Record-Revenue",
+                "publisher": "NVIDIA Investor Relations",
+                "published_at": datetime.datetime(2025, 2, 26, 17, 0, tzinfo=datetime.timezone.utc),
+                "raw_text": (
+                    "NVIDIA today reported revenue for the fourth quarter ended January 26, 2025, of $39.3 billion, "
+                    "up 12% from the previous quarter and up 78% from a year ago. GAAP earnings per diluted share "
+                    "for the quarter were $0.89, up 14% from the previous quarter and up 82% from a year ago. "
+                    "Data Center quarterly revenue was $35.6 billion, up 16% from the previous quarter and up 93% "
+                    "from a year ago, driven by strong demand for Hopper and Blackwell GPU computing platforms. "
+                    "CEO Jensen Huang said: 'The age of AI is full on. Physical AI and agentic AI are driving "
+                    "a new wave of investment in AI infrastructure worldwide.'"
+                ),
+                "source_type": SourceType.json,
+                "source_name": "nvidia_press_releases",
+                "extracted_entities": {"companies": [{"id": str(co_nvidia.id) if co_nvidia else None, "name": "NVIDIA"}]},
+                "entity_links": [("company", co_nvidia, "NVIDIA")],
+            },
+            {
+                "title": "AMD MI300X Achieves 60% Market Share in Hyperscaler Inference Deployments",
+                "url": "https://www.semianalysis.com/p/amd-mi300x-market-share",
+                "publisher": "SemiAnalysis",
+                "published_at": datetime.datetime(2025, 1, 15, 9, 0, tzinfo=datetime.timezone.utc),
+                "raw_text": (
+                    "AMD's MI300X accelerator has captured approximately 60% of new hyperscaler inference "
+                    "deployments outside of NVIDIA's core enterprise customer base, according to SemiAnalysis "
+                    "research. The chip's 192GB HBM3 memory capacity gives it a decisive advantage for serving "
+                    "large language models with long context windows. Microsoft Azure has deployed MI300X in its "
+                    "ND MI300X v5 series, and Meta is evaluating the chip for its recommendation engine "
+                    "inference workloads. AMD reported data center revenue of $2.3 billion in Q3 2024, "
+                    "primarily driven by MI300X shipments."
+                ),
+                "source_type": SourceType.json,
+                "source_name": "semianalysis_reports",
+                "extracted_entities": {
+                    "companies": [{"id": str(co_amd.id) if co_amd else None, "name": "AMD"}],
+                    "hardware_products": [{"id": str(hw_mi300x.id) if hw_mi300x else None, "name": "MI300X"}],
+                },
+                "entity_links": [
+                    ("company", co_amd, "AMD"),
+                    ("hardware_product", hw_mi300x, "MI300X"),
+                ],
+            },
+            {
+                "title": "TSMC CoWoS Capacity to Triple by Q4 2025 Amid AI Chip Demand",
+                "url": "https://www.digitimes.com/news/tsmc-cowos-capacity-expansion",
+                "publisher": "DigiTimes",
+                "published_at": datetime.datetime(2024, 11, 20, 8, 0, tzinfo=datetime.timezone.utc),
+                "raw_text": (
+                    "TSMC is on track to triple its CoWoS advanced packaging capacity by the end of 2025, "
+                    "according to supply chain sources. The expansion is driven by insatiable demand for "
+                    "NVIDIA's H100, H200, and upcoming Blackwell B100 GPUs, as well as AMD's MI300X and "
+                    "Apple's M-series chips. Current CoWoS capacity stands at approximately 35,000 wafers "
+                    "per month, with the target of reaching 100,000 wafers per month. "
+                    "Capital expenditure for packaging alone is estimated at $10 billion through 2026."
+                ),
+                "source_type": SourceType.rss,
+                "source_name": "digitimes_rss",
+                "extracted_entities": {
+                    "companies": [{"id": str(co_tsmc.id) if co_tsmc else None, "name": "TSMC"}],
+                    "hardware_products": [
+                        {"id": str(hw_h100.id) if hw_h100 else None, "name": "H100"},
+                        {"id": str(hw_b100.id) if hw_b100 else None, "name": "B100"},
+                    ],
+                },
+                "entity_links": [
+                    ("company", co_tsmc, "TSMC"),
+                    ("hardware_product", hw_h100, "H100"),
+                ],
+            },
+            {
+                "title": "Microsoft Commits $80 Billion to AI Data Centers in 2025",
+                "url": "https://blogs.microsoft.com/blog/2025/01/microsoft-ai-infrastructure-2025",
+                "publisher": "Microsoft Official Blog",
+                "published_at": datetime.datetime(2025, 1, 3, 12, 0, tzinfo=datetime.timezone.utc),
+                "raw_text": (
+                    "Microsoft plans to invest $80 billion in AI-enabled data center infrastructure "
+                    "in fiscal year 2025, with more than half of this investment going to the United States. "
+                    "This investment will enable Microsoft to train large AI models and deploy AI and cloud-based "
+                    "applications around the world. The investment reflects the extraordinary demand for AI "
+                    "compute and the confidence Microsoft has in the transformative potential of AI. "
+                    "Microsoft's Azure has become the go-to platform for OpenAI workloads and is expanding "
+                    "its fleet of H100 and Blackwell GPU clusters."
+                ),
+                "source_type": SourceType.rss,
+                "source_name": "microsoft_blog_rss",
+                "extracted_entities": {
+                    "companies": [{"id": str(co_microsoft.id) if co_microsoft else None, "name": "Microsoft"}],
+                },
+                "entity_links": [
+                    ("company", co_microsoft, "Microsoft"),
+                    ("datacenter", dc_azure, "Azure East US AI Hub"),
+                ],
+            },
+            {
+                "title": "Google DeepMind Publishes Gemini 2.0 Training Details on TPU v5p",
+                "url": "https://deepmind.google/research/gemini-2-technical-report",
+                "publisher": "Google DeepMind",
+                "published_at": datetime.datetime(2025, 3, 1, 10, 0, tzinfo=datetime.timezone.utc),
+                "raw_text": (
+                    "Google DeepMind has published details on how Gemini 2.0 was trained using a fleet of "
+                    "TPU v5p pods across Google's global data center network. The training run used over "
+                    "50,000 TPU v5p chips interconnected via Google's custom ICI (Inter-Chip Interconnect) "
+                    "fabric at 4800 Gb/s per chip. The model achieved state-of-the-art results on MMLU, "
+                    "HumanEval, and MATH benchmarks. Google claims TPU v5p offers 60% better price-performance "
+                    "than H100 for JAX-based transformer training workloads."
+                ),
+                "source_type": SourceType.json,
+                "source_name": "deepmind_research",
+                "extracted_entities": {
+                    "companies": [{"id": str(co_google.id) if co_google else None, "name": "Google"}],
+                },
+                "entity_links": [("company", co_google, "Google")],
+            },
+            {
+                "title": "NVIDIA Blackwell B100 Production Yield Issues Delay Volume Shipments",
+                "url": "https://www.theinformation.com/articles/nvidia-blackwell-yield-issues",
+                "publisher": "The Information",
+                "published_at": datetime.datetime(2024, 8, 5, 14, 30, tzinfo=datetime.timezone.utc),
+                "raw_text": (
+                    "NVIDIA's Blackwell B100 GPUs have experienced significant production yield issues at TSMC "
+                    "that have pushed back volume shipments by approximately two quarters, according to sources "
+                    "familiar with the matter. The yield problems relate to the chip's 3nm process node and "
+                    "the complex multi-die design. NVIDIA has reportedly redesigned the packaging to address "
+                    "the issues, and volume production is now expected in Q1 2025 rather than Q3 2024. "
+                    "Hyperscalers including Amazon, Microsoft, and Google have been informed of the delay."
+                ),
+                "source_type": SourceType.json,
+                "source_name": "theinformation_articles",
+                "extracted_entities": {
+                    "companies": [{"id": str(co_nvidia.id) if co_nvidia else None, "name": "NVIDIA"}],
+                    "hardware_products": [{"id": str(hw_b100.id) if hw_b100 else None, "name": "B100"}],
+                },
+                "entity_links": [
+                    ("company", co_nvidia, "NVIDIA"),
+                    ("hardware_product", hw_b100, "B100"),
+                ],
+            },
+            {
+                "title": "Intel Gaudi 3 Benchmarks Show Competitive LLM Inference Performance",
+                "url": "https://www.intel.com/content/www/us/en/developer/articles/technical/gaudi3-llm-benchmarks",
+                "publisher": "Intel Developer Zone",
+                "published_at": datetime.datetime(2024, 9, 18, 9, 0, tzinfo=datetime.timezone.utc),
+                "raw_text": (
+                    "Intel has published detailed benchmark results for Gaudi 3 across a range of LLM inference "
+                    "workloads. On Llama 3 70B with FP8 precision, Gaudi 3 achieves 1,847 tokens/second compared "
+                    "to H100's 1,256 tokens/second — a 47% performance advantage. For Mixtral 8x7B inference, "
+                    "Gaudi 3 delivers 3,100 tokens/second. Intel attributes the gains to Gaudi 3's 3.7 TB/s "
+                    "memory bandwidth and optimized attention kernels in the SynapseAI software stack. "
+                    "Gaudi 3 is available on Intel Tiber AI Cloud and through major OEM partners."
+                ),
+                "source_type": SourceType.json,
+                "source_name": "intel_developer_articles",
+                "extracted_entities": {
+                    "companies": [{"id": str(co_intel.id) if co_intel else None, "name": "Intel"}],
+                    "hardware_products": [{"id": str(hw_gaudi3.id) if hw_gaudi3 else None, "name": "Gaudi 3"}],
+                },
+                "entity_links": [
+                    ("company", co_intel, "Intel"),
+                    ("hardware_product", hw_gaudi3, "Gaudi 3"),
+                ],
+            },
+            {
+                "title": "Meta Orders 350,000 H100 GPUs for Llama 4 Training",
+                "url": "https://www.wsj.com/tech/ai/meta-350000-nvidia-h100-gpus",
+                "publisher": "Wall Street Journal",
+                "published_at": datetime.datetime(2024, 10, 22, 16, 0, tzinfo=datetime.timezone.utc),
+                "raw_text": (
+                    "Meta Platforms has placed orders for approximately 350,000 NVIDIA H100 GPUs to support "
+                    "training of its next-generation Llama 4 family of large language models, according to "
+                    "people familiar with the matter. The order, worth an estimated $10 billion, represents "
+                    "one of the single largest GPU purchases in history. The chips will be deployed across "
+                    "Meta's Texas and Louisiana data center campuses, which are being expanded to accommodate "
+                    "the massive power requirements. Meta CEO Mark Zuckerberg has made AI the company's top "
+                    "investment priority for 2025 and 2026."
+                ),
+                "source_type": SourceType.rss,
+                "source_name": "wsj_tech_rss",
+                "extracted_entities": {
+                    "companies": [
+                        {"id": str(co_meta.id) if co_meta else None, "name": "Meta"},
+                        {"id": str(co_nvidia.id) if co_nvidia else None, "name": "NVIDIA"},
+                    ],
+                    "hardware_products": [{"id": str(hw_h100.id) if hw_h100 else None, "name": "H100"}],
+                },
+                "entity_links": [
+                    ("company", co_meta, "Meta"),
+                    ("hardware_product", hw_h100, "H100"),
+                    ("datacenter", dc_meta, "Meta AI Texas Campus"),
+                ],
+            },
+            {
+                "title": "H200 SXM Availability Expands to All Major Cloud Providers",
+                "url": "https://nvidianews.nvidia.com/news/h200-cloud-availability",
+                "publisher": "NVIDIA Newsroom",
+                "published_at": datetime.datetime(2024, 5, 21, 13, 0, tzinfo=datetime.timezone.utc),
+                "raw_text": (
+                    "NVIDIA today announced that H200 SXM GPU instances are now available through Amazon Web "
+                    "Services, Google Cloud Platform, Microsoft Azure, and Oracle Cloud Infrastructure. "
+                    "The H200 features 141GB of HBM3e memory — nearly double the bandwidth of HBM3 — enabling "
+                    "significantly faster inference for large language models with long context windows. "
+                    "Early benchmarks show H200 delivers 1.4x the tokens-per-second of H100 on Llama 3 70B. "
+                    "Cloud pricing starts at $5.96/hour on AWS for a single H200."
+                ),
+                "source_type": SourceType.json,
+                "source_name": "nvidia_newsroom",
+                "extracted_entities": {
+                    "companies": [{"id": str(co_nvidia.id) if co_nvidia else None, "name": "NVIDIA"}],
+                    "hardware_products": [{"id": str(hw_h200.id) if hw_h200 else None, "name": "H200"}],
+                },
+                "entity_links": [
+                    ("company", co_nvidia, "NVIDIA"),
+                    ("hardware_product", hw_h200, "H200"),
+                ],
+            },
+            {
+                "title": "US West GPU Cluster Reaches 87% Utilization, Expansion Planned",
+                "url": None,
+                "publisher": "Internal Operations Report",
+                "published_at": datetime.datetime(2026, 1, 15, 0, 0, tzinfo=datetime.timezone.utc),
+                "raw_text": (
+                    "The US West GPU Cluster has reached 87% average utilization across all H100 nodes "
+                    "as of Q1 2026. Peak utilization during LLM training jobs reaches 98%. "
+                    "Power draw is averaging 483 MW, approaching the facility's 500 MW capacity limit. "
+                    "Operations team recommends initiating Phase 2 expansion planning immediately. "
+                    "Estimated cost for 200 MW additional capacity is $400M including cooling upgrades."
+                ),
+                "source_type": SourceType.file,
+                "source_name": "internal_ops_reports",
+                "extracted_entities": {
+                    "datacenters": [{"id": str(dc_us.id) if dc_us else None, "name": "US West GPU Cluster"}],
+                    "hardware_products": [{"id": str(hw_h100.id) if hw_h100 else None, "name": "H100"}],
+                },
+                "entity_links": [
+                    ("datacenter", dc_us, "US West GPU Cluster"),
+                ],
+            },
+        ]
+
+        # Create a seed ingestion run to associate with the documents
+        seed_run = await _get_or_skip(session, IngestionRun, source_name="seed_initial")
+        if not seed_run:
+            seed_run = IngestionRun(
+                id=uuid.uuid4(),
+                triggered_by=None,
+                source_type=SourceType.json,
+                source_name="seed_initial",
+                status=RunStatus.success,
+                dry_run=False,
+                finished_at=now,
+                stats={"total": len(source_docs), "ingested": len(source_docs), "skipped": 0, "errors": 0},
+            )
+            session.add(seed_run)
+            await session.flush()
+            logger.info("Created seed ingestion run.")
+
+        for sd in source_docs:
+            content_hash = _content_hash(
+                sd["title"], sd["url"], sd["published_at"], sd["raw_text"]
+            )
+            existing_doc = await _get_or_skip(session, SourceDocument, content_hash=content_hash)
+            if existing_doc:
+                logger.info("SourceDocument '%s' already exists, skipping.", sd["title"][:60])
+                continue
+
+            doc = SourceDocument(
+                id=uuid.uuid4(),
+                title=sd["title"],
+                url=sd["url"],
+                publisher=sd["publisher"],
+                published_at=sd["published_at"],
+                raw_text=sd["raw_text"],
+                content_hash=content_hash,
+                extracted_entities=sd["extracted_entities"],
+                source_type=sd["source_type"],
+                source_name=sd["source_name"],
+                status=IngestionStatus.ingested,
+            )
+            session.add(doc)
+            await session.flush()
+
+            for entity_type, entity, entity_name in sd["entity_links"]:
+                if entity is not None:
+                    session.add(
+                        SourceEntityLink(
+                            id=uuid.uuid4(),
+                            source_document_id=doc.id,
+                            entity_type=entity_type,
+                            entity_id=entity.id,
+                            entity_name=entity_name,
+                        )
+                    )
+
+            logger.info("Created source document: '%s'", sd["title"][:60])
 
         await session.commit()
         logger.info("Seed complete.")
