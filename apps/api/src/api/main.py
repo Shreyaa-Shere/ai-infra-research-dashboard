@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -10,6 +11,7 @@ from fastapi.security import HTTPBearer
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+from api.auth.hashing import hash_password
 from api.auth.rate_limit import limiter
 from api.logging_config import setup_logging
 from api.middleware import RequestIdMiddleware, SecurityHeadersMiddleware
@@ -40,6 +42,8 @@ _bearer = HTTPBearer(auto_error=False)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    # Pre-warm bcrypt with configured rounds; stored as dummy for constant-time user-not-found checks.
+    app.state.dummy_hash = await asyncio.to_thread(hash_password, "startup-warmup-not-a-real-password")
     yield
 
 

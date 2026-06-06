@@ -42,7 +42,7 @@ async def login(
     # Run bcrypt in a thread pool to avoid blocking the async event loop.
     # Always verify (even for missing user) to prevent timing-based enumeration.
     # verify_and_update also silently re-hashes if stored rounds are outdated.
-    dummy = "$2b$12$invalidhashpaddingtomakethislongenoughXXXXXXXXXXXXXXXXXXX"
+    dummy = request.app.state.dummy_hash
     is_valid, new_hash = await asyncio.to_thread(
         verify_and_update, body.password, user.hashed_password if user else dummy
     )

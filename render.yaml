@@ -36,7 +36,7 @@ services:
       - key: JWT_REFRESH_TTL_DAYS
         value: 7
       - key: BCRYPT_ROUNDS
-        value: 10
+        value: 8
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
