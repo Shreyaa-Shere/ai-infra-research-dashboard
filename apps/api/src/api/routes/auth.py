@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -6,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth.dependencies import get_current_user
-from api.auth.hashing import verify_password
+from api.auth.hashing import verify_and_update
 from api.auth.jwt import create_access_token, create_refresh_token, hash_token
 from api.auth.rate_limit import limiter
 from api.db.session import get_session
@@ -38,8 +39,18 @@ async def login(
     result = await session.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(body.password, user.hashed_password):
+    # Run bcrypt in a thread pool to avoid blocking the async event loop.
+    # Always verify (even for missing user) to prevent timing-based enumeration.
+    # verify_and_update also silently re-hashes if stored rounds are outdated.
+    dummy = "$2b$12$invalidhashpaddingtomakethislongenoughXXXXXXXXXXXXXXXXXXX"
+    is_valid, new_hash = await asyncio.to_thread(
+        verify_and_update, body.password, user.hashed_password if user else dummy
+    )
+    if not user or not is_valid:
         raise api_error("INVALID_CREDENTIALS", "Invalid email or password", 401)
+
+    if new_hash:
+        user.hashed_password = new_hash
 
     if not user.is_active:
         raise api_error("USER_INACTIVE", "Account is deactivated", 403)

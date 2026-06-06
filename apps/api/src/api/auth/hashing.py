@@ -20,3 +20,9 @@ def hash_password(plain: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     return _ctx().verify(plain, hashed)
+
+
+def verify_and_update(plain: str, hashed: str) -> tuple[bool, str | None]:
+    """Verify password and return a new hash if the stored one uses outdated settings."""
+    ok, new_hash = _ctx().verify_and_update(plain, hashed)
+    return ok, new_hash

@@ -77,7 +77,7 @@ function reducer(state: AuthState, action: AuthAction): AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
   refresh: () => Promise<boolean>
 }
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     dispatch({ type: 'SET_LOADING' })
     try {
       const data = await authApi.login(email, password)
@@ -120,8 +120,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           refreshToken: data.refresh_token,
         },
       })
+      return true
     } catch (err) {
       dispatch({ type: 'SET_ERROR', payload: (err as Error).message })
+      return false
     }
   }, [])
 

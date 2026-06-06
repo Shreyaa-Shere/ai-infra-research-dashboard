@@ -27,9 +27,8 @@ export default function LoginForm() {
     }
 
     setFieldErrors({})
-    await login(result.data.email, result.data.password)
-    // AuthContext sets user on success; navigate after re-render
-    navigate('/dashboard', { replace: true })
+    const ok = await login(result.data.email, result.data.password)
+    if (ok) navigate('/dashboard', { replace: true })
   }
 
   return (
