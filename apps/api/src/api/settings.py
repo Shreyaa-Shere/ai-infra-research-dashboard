@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     frontend_base_url: str = "http://localhost:5173"
 
+    # ── Rate limiting ─────────────────────────────────────────────────────────
+    # Raise in dev/CI (docker-compose sets 1000/minute); keep 10/minute in prod.
+    login_rate_limit: str = "10/minute"
+
     # ── Invites ────────────────────────────────────────────────────────────────
     invite_token_ttl_days: int = 7
 

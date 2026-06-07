@@ -34,7 +34,7 @@ _FALLBACK_DUMMY_HASH = hash_password("no-such-user-timing-safety")
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("10/minute")
+@limiter.limit(settings.login_rate_limit)
 async def login(
     request: Request,
     body: LoginRequest,

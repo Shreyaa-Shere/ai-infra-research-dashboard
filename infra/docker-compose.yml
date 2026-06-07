@@ -44,6 +44,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
       INVITE_TOKEN_TTL_DAYS: ${INVITE_TOKEN_TTL_DAYS:-7}
+      LOGIN_RATE_LIMIT: ${LOGIN_RATE_LIMIT:-1000/minute}
     ports:
       - "8000:8000"
     volumes:
