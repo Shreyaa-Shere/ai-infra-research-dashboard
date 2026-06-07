@@ -43,7 +43,9 @@ _bearer = HTTPBearer(auto_error=False)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Pre-warm bcrypt with configured rounds; stored as dummy for constant-time user-not-found checks.
-    app.state.dummy_hash = await asyncio.to_thread(hash_password, "startup-warmup-not-a-real-password")
+    app.state.dummy_hash = await asyncio.to_thread(
+        hash_password, "startup-warmup-not-a-real-password"
+    )
     yield
 
 

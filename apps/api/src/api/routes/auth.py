@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth.dependencies import get_current_user
-from api.auth.hashing import verify_and_update
+from api.auth.hashing import hash_password, verify_and_update
 from api.auth.jwt import create_access_token, create_refresh_token, hash_token
 from api.auth.rate_limit import limiter
 from api.db.session import get_session
@@ -28,6 +28,10 @@ from api.settings import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Computed once at import time; used as fallback when app.state.dummy_hash is not set
+# (e.g. in tests where the ASGI lifespan does not run via ASGITransport).
+_FALLBACK_DUMMY_HASH = hash_password("no-such-user-timing-safety")
+
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
@@ -42,7 +46,7 @@ async def login(
     # Run bcrypt in a thread pool to avoid blocking the async event loop.
     # Always verify (even for missing user) to prevent timing-based enumeration.
     # verify_and_update also silently re-hashes if stored rounds are outdated.
-    dummy = request.app.state.dummy_hash
+    dummy = getattr(request.app.state, "dummy_hash", None) or _FALLBACK_DUMMY_HASH
     is_valid, new_hash = await asyncio.to_thread(
         verify_and_update, body.password, user.hashed_password if user else dummy
     )
